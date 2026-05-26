@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical://shared/money",
+  "title": "Money",
+  "description": "Monetary amount with ISO 4217 currency code",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["amount", "currency"],
+  "properties": {
+    "amount": { "type": "number" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+  }
+}

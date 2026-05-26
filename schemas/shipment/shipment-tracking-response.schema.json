@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical://shipment/shipment-tracking-response",
+  "title": "ShipmentTrackingResponse",
+  "description": "Canonical shipment tracking status and events",
+  "x-canonical-version": "1.0.0",
+  "x-canonical-domain": "shipment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["shipmentId", "status", "events"],
+  "properties": {
+    "shipmentId": { "type": "string", "minLength": 1 },
+    "trackingNumber": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "exception",
+        "returned",
+        "cancelled"
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "code", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "code": { "type": "string" },
+          "description": { "type": "string" },
+          "location": { "$ref": "canonical://shared/address" }
+        }
+      }
+    },
+    "estimatedDeliveryDate": { "type": "string", "format": "date" },
+    "metadata": { "$ref": "canonical://shared/metadata" },
+    "extensions": {
+      "type": "object",
+      "description": "Carrier- or integration-specific extensible fields",
+      "additionalProperties": true
+    }
+  }
+}

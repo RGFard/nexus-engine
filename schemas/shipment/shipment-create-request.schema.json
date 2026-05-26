@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical://shipment/shipment-create-request",
+  "title": "ShipmentCreateRequest",
+  "description": "Canonical request to create a shipment",
+  "x-canonical-version": "1.0.0",
+  "x-canonical-domain": "shipment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["origin", "destination", "packages"],
+  "properties": {
+    "referenceId": { "type": "string" },
+    "serviceLevel": {
+      "type": "string",
+      "enum": ["standard", "express", "overnight", "economy"]
+    },
+    "origin": { "$ref": "canonical://shared/address" },
+    "destination": { "$ref": "canonical://shared/address" },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "canonical://shared/package" }
+    },
+    "declaredValue": { "$ref": "canonical://shared/money" },
+    "metadata": { "$ref": "canonical://shared/metadata" },
+    "extensions": {
+      "type": "object",
+      "description": "Carrier- or integration-specific extensible fields",
+      "additionalProperties": true
+    }
+  }
+}

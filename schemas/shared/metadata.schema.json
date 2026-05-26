@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical://shared/metadata",
+  "title": "Metadata",
+  "description": "Cross-cutting metadata for traceability and integration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "correlationId": { "type": "string", "format": "uuid" },
+    "sourceSystem": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

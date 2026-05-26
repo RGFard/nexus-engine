@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical://shared/address",
+  "title": "Address",
+  "description": "Postal address for origin, destination, or contact locations",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["line1", "city", "countryCode"],
+  "properties": {
+    "line1": { "type": "string", "minLength": 1 },
+    "line2": { "type": "string" },
+    "city": { "type": "string", "minLength": 1 },
+    "stateOrProvince": { "type": "string" },
+    "postalCode": { "type": "string" },
+    "countryCode": { "type": "string", "pattern": "^[A-Z]{2}$" }
+  }
+}
