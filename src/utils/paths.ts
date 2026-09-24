@@ -8,4 +8,4 @@ const __dirname = path.dirname(__filename);
 export const projectRoot = path.resolve(__dirname, "..", "..");
 
 /** Directory containing JSON Schema files */
-export const schemasRoot = path.join(projectRoot, "schemas");
+export const schemasRoot = path.join(projectRoot, "src", "schemas");

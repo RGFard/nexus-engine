@@ -1,0 +1,27 @@
+{
+  "shipmentTrackingNumber": "1234567890",
+  "productCode": "P",
+  "estimatedDeliveryDate": "2026-05-30",
+  "senderDetails": {
+    "postalAddress": {
+      "addressLine1": "100 Main St",
+      "cityName": "Bonn",
+      "postalCode": "53113",
+      "countryCode": "DE"
+    }
+  },
+  "receiverDetails": {
+    "postalAddress": {
+      "addressLine1": "200 Oak Ave",
+      "cityName": "Berlin",
+      "postalCode": "10115",
+      "countryCode": "DE"
+    }
+  },
+  "packages": [
+    {
+      "weight": 2.5,
+      "dimensions": { "length": 30, "width": 20, "height": 15 }
+    }
+  ]
+}

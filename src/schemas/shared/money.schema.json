@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shared/money",
+  "title": "Money",
+  "description": "Monetary amount with ISO 4217 currency code.",
+  "x-canonical-version": "2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["amount", "currency"],
+  "properties": {
+    "amount": {
+      "type": "number",
+      "description": "Monetary amount in major currency units (e.g. dollars, euros)."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217 three-letter currency code."
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "ShipmentIdentificationNumber": "1Z999AA10123456784",
+  "Service": { "Code": "03", "Description": "UPS Ground" },
+  "DeliveryDateInformation": { "DeliveryDate": "20260530" },
+  "ShipFrom": {
+    "Address": {
+      "AddressLine": ["100 Main St"],
+      "City": "Louisville",
+      "StateProvinceCode": "KY",
+      "PostalCode": "40201",
+      "CountryCode": "US"
+    }
+  },
+  "ShipTo": {
+    "Address": {
+      "AddressLine": ["200 Oak Ave"],
+      "City": "Los Angeles",
+      "StateProvinceCode": "CA",
+      "PostalCode": "90001",
+      "CountryCode": "US"
+    }
+  },
+  "Package": {
+    "PackageWeight": { "UnitOfMeasurement": { "Code": "LBS" }, "Weight": "5.2" },
+    "Dimensions": { "Length": "12", "Width": "10", "Height": "8", "UnitOfMeasurement": { "Code": "IN" } }
+  }
+}

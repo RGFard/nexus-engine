@@ -1,0 +1,32 @@
+{
+  "masterTrackingNumber": "794612345678",
+  "serviceType": "FEDEX_GROUND",
+  "shipTimestamp": "2026-05-28T10:00:00Z",
+  "estimatedDeliveryTimestamp": "2026-05-30T17:00:00Z",
+  "shipper": {
+    "contact": { "personName": "Acme Warehouse" },
+    "address": {
+      "streetLines": ["100 Main St"],
+      "city": "Memphis",
+      "stateOrProvinceCode": "TN",
+      "postalCode": "38118",
+      "countryCode": "US"
+    }
+  },
+  "recipient": {
+    "contact": { "personName": "Jane Doe" },
+    "address": {
+      "streetLines": ["200 Oak Ave"],
+      "city": "Los Angeles",
+      "stateOrProvinceCode": "CA",
+      "postalCode": "90001",
+      "countryCode": "US"
+    }
+  },
+  "requestedPackageLineItems": [
+    {
+      "weight": { "units": "LB", "value": 5.2 },
+      "dimensions": { "length": 12, "width": 10, "height": 8, "units": "IN" }
+    }
+  ]
+}

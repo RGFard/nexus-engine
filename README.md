@@ -17,8 +17,8 @@ npm install
 npm run dev
 ```
 
-- API: http://localhost:3000
-- OpenAPI UI: http://localhost:3000/documentation
+- API: http://localhost:3002
+- OpenAPI UI: http://localhost:3002/documentation
 
 ## API
 
@@ -31,8 +31,8 @@ npm run dev
 ## Project layout
 
 ```
-schemas/          # JSON Schema source files
-  shared/         # Reusable components
+src/schemas/      # JSON Schema draft-07 source files
+  shared/         # Reusable components (address, package, money, metadata)
   shipment/       # Shipment domain schemas
 src/
   routes/         # HTTP route handlers

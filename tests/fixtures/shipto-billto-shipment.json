@@ -1,0 +1,27 @@
+{
+  "trackingNumber": "TEST-789",
+  "billTo": {
+    "name": "Acme Corp",
+    "addressLine1": "100 Main St",
+    "city": "New York",
+    "stateOrProvince": "NY",
+    "postalCode": "10001",
+    "countryCode": "US"
+  },
+  "shipTo": {
+    "name": "Jane Doe",
+    "addressLine1": "200 Oak Ave",
+    "city": "Los Angeles",
+    "stateOrProvince": "CA",
+    "postalCode": "90001",
+    "countryCode": "US"
+  },
+  "shipFrom": {
+    "name": "Acme Warehouse",
+    "addressLine1": "300 Warehouse Blvd",
+    "city": "Memphis",
+    "stateOrProvince": "TN",
+    "postalCode": "38118",
+    "country": "US"
+  }
+}

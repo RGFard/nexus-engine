@@ -2,37 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "canonical://shipment/shipment-create-response",
   "title": "ShipmentCreateResponse",
-  "description": "Canonical response after creating a shipment",
-  "x-canonical-version": "1.0.0",
+  "description": "Legacy copy — use src/schemas/shipment/shipment-create-response.schema.json (v2.1.0+) for the canonical registry.",
+  "x-canonical-version": "2.1.0",
   "x-canonical-domain": "shipment",
   "type": "object",
   "additionalProperties": false,
-  "required": ["shipmentId", "status", "createdAt"],
   "properties": {
-    "shipmentId": { "type": "string", "minLength": 1 },
-    "trackingNumber": { "type": "string" },
+    "shipmentId": { "type": ["string", "null"] },
+    "trackingNumber": { "type": ["string", "null"] },
     "status": {
-      "type": "string",
+      "type": ["string", "null"],
       "enum": ["created", "label_generated", "pickup_scheduled", "in_transit"]
     },
-    "labelUrl": { "type": "string", "format": "uri" },
-    "estimatedDeliveryDate": { "type": "string", "format": "date" },
-    "charges": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["type", "amount"],
-        "additionalProperties": false,
-        "properties": {
-          "type": { "type": "string" },
-          "amount": { "$ref": "canonical://shared/money" }
-        }
-      }
-    },
+    "createdAt": { "type": ["string", "null"], "format": "date-time" },
     "metadata": { "$ref": "canonical://shared/metadata" },
     "extensions": {
       "type": "object",
-      "description": "Carrier- or integration-specific extensible fields",
       "additionalProperties": true
     }
   }

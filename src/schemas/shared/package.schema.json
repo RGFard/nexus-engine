@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shared/package",
+  "title": "Package",
+  "description": "Physical package, parcel, or handling unit within a shipment.",
+  "x-canonical-version": "2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["weight"],
+  "properties": {
+    "packageId": {
+      "type": ["string", "null"],
+      "description": "Client-assigned identifier for this package within the shipment."
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Human-readable description of package contents."
+    },
+    "sku": {
+      "type": ["string", "null"],
+      "description": "Stock keeping unit or product code."
+    },
+    "quantity": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of identical units in this package line."
+    },
+    "weight": {
+      "type": "object",
+      "description": "Package weight.",
+      "additionalProperties": false,
+      "required": ["value", "unit"],
+      "properties": {
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Weight numeric value."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["kg", "lb", "g", "oz"],
+          "description": "Weight unit of measure."
+        }
+      }
+    },
+    "dimensions": {
+      "type": ["object", "null"],
+      "description": "Package dimensions (length, width, height).",
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Length dimension value."
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Width dimension value."
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Height dimension value."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["cm", "in", "m"],
+          "description": "Dimension unit of measure."
+        }
+      }
+    },
+    "declaredValue": {
+      "description": "Declared customs or insurance value for this package.",
+      "$ref": "canonical://shared/money"
+    },
+    "hazardous": {
+      "type": ["boolean", "null"],
+      "description": "Whether the package contains hazardous materials."
+    },
+    "hazardousDetails": {
+      "type": ["object", "null"],
+      "description": "Hazardous materials classification when applicable.",
+      "additionalProperties": false,
+      "properties": {
+        "unNumber": {
+          "type": ["string", "null"],
+          "description": "UN dangerous goods number."
+        },
+        "class": {
+          "type": ["string", "null"],
+          "description": "Hazard class code."
+        }
+      }
+    }
+  }
+}

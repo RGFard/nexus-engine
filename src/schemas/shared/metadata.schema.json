@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shared/metadata",
+  "title": "Metadata",
+  "description": "Cross-cutting metadata for traceability, auditing, and integration context.",
+  "x-canonical-version": "2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "End-to-end correlation identifier for distributed tracing."
+    },
+    "requestId": {
+      "type": ["string", "null"],
+      "description": "Unique identifier for the originating API request."
+    },
+    "sourceSystem": {
+      "type": ["string", "null"],
+      "description": "System or application that originated the payload."
+    },
+    "sourceEnvironment": {
+      "type": ["string", "null"],
+      "description": "Environment of the source system (e.g. production, staging)."
+    },
+    "createdAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "UTC timestamp when the resource was created."
+    },
+    "updatedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "UTC timestamp when the resource was last updated."
+    },
+    "tags": {
+      "type": ["array", "null"],
+      "description": "Optional key-value or label tags for classification.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "value"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Tag key."
+          },
+          "value": {
+            "type": "string",
+            "description": "Tag value."
+          }
+        }
+      }
+    },
+    "attributes": {
+      "type": ["object", "null"],
+      "description": "Arbitrary string attributes for integration-specific metadata.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,6 +1,13 @@
 import Fastify from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import { registerAiMappingRoutes } from "./ai/routes/ai-mapping.routes.js";
+import { registerVocabularyRoutes } from "./ai/routes/vocabulary.routes.js";
+import { createTransformationExecutorRegistry } from "./ai/services/transformation-executor.service.js";
+import { schemaRefResolver } from "./ai/services/schema-ref-resolver.service.js";
+import { semanticMatcherService } from "./ai/services/semantic-matcher.service.js";
+import { CanonicalFieldsService } from "./ai/services/canonical-fields.service.js";
+import { vocabularyStore } from "./ai/services/custom-vocabulary.store.js";
 import { registerSchemaRoutes } from "./routes/schemas.routes.js";
 import { schemaRegistry } from "./services/schema-registry.service.js";
 import { SchemaValidationService } from "./services/schema-validation.service.js";
@@ -31,10 +38,13 @@ export async function buildApp(config: AppConfig) {
       info: {
         title: "Canonical Schema Service",
         description:
-          "Registry and validation API for canonical JSON Schemas with extensible fields and versioning.",
+          "Registry and validation API for canonical JSON Schemas, plus AI semantic mapping between schemas.",
         version: "1.0.0",
       },
-      tags: [{ name: "schemas", description: "Schema registry and validation" }],
+      tags: [
+        { name: "schemas", description: "Schema registry and validation" },
+        { name: "ai", description: "AI semantic mapping engine" },
+      ],
     },
   });
 
@@ -43,12 +53,24 @@ export async function buildApp(config: AppConfig) {
   });
 
   await schemaRegistry.initialize();
+  schemaRefResolver.loadFromRegistry(schemaRegistry);
+  semanticMatcherService.setRefResolver(schemaRefResolver);
   const validationService = new SchemaValidationService(schemaRegistry);
   await validationService.initialize();
 
+  const canonicalFields = new CanonicalFieldsService(schemaRegistry);
+  canonicalFields.initialize();
+
   app.get("/health", async () => ({ status: "ok" }));
 
+  const transformationRegistry = createTransformationExecutorRegistry(validationService);
+
   await registerSchemaRoutes(app, validationService);
+  await registerAiMappingRoutes(app, {
+    transformationRegistry,
+    schemaRegistry,
+  });
+  await registerVocabularyRoutes(app, { vocabularyStore, canonicalFields });
 
   return app;
 }

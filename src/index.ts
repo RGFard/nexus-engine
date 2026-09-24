@@ -1,7 +1,7 @@
 import { buildApp } from "./app.js";
 
 const host = process.env.HOST ?? "0.0.0.0";
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 3002);
 const logLevel = process.env.LOG_LEVEL ?? "info";
 
 async function main(): Promise<void> {

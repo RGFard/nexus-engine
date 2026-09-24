@@ -1,0 +1,15 @@
+{
+  "name": "nexus-engine-step3",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Step 3 — auto-learning vocabulary for nexus-engine (suggestedMappings + /vocabulary/accept + priority resolution).",
+  "scripts": {
+    "demo": "tsx src/step3.demo.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

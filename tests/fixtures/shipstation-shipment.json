@@ -1,0 +1,36 @@
+{
+  "shipments": [
+    {
+      "shipmentId": 112233445
+    }
+  ],
+  "advancedOptions": {
+    "warehouseId": 98765
+  },
+  "billTo": {
+    "name": "Acme Corp",
+    "street1": "100 Main St",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10001",
+    "country": "US"
+  },
+  "shipTo": {
+    "name": "Jane Doe",
+    "street1": "200 Oak Ave",
+    "city": "Los Angeles",
+    "state": "CA",
+    "postalCode": "90001",
+    "country": "US"
+  },
+  "weight": {
+    "value": 5.2,
+    "units": "pounds"
+  },
+  "items": [
+    {
+      "name": "Widget",
+      "quantity": 1
+    }
+  ]
+}

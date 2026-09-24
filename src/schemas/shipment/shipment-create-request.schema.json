@@ -1,0 +1,259 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shipment/shipment-create-request",
+  "title": "ShipmentCreateRequest",
+  "description": "Canonical request to create a shipment across carriers and integration channels.",
+  "x-canonical-version": "2.0.0",
+  "x-canonical-domain": "shipment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["origin", "destination", "packages"],
+  "properties": {
+    "identifiers": {
+      "type": ["object", "null"],
+      "description": "Business and integration identifiers for the shipment.",
+      "additionalProperties": false,
+      "properties": {
+        "shipmentId": {
+          "type": ["string", "null"],
+          "description": "Canonical or platform-assigned shipment identifier when known at create time."
+        },
+        "externalId": {
+          "type": ["string", "null"],
+          "description": "Identifier in an external order or WMS system."
+        },
+        "clientReferenceId": {
+          "type": ["string", "null"],
+          "description": "Client-provided reference for reconciliation."
+        },
+        "purchaseOrderNumber": {
+          "type": ["string", "null"],
+          "description": "Purchase order number associated with the shipment."
+        },
+        "orderId": {
+          "type": ["string", "null"],
+          "description": "E-commerce or ERP order identifier."
+        },
+        "invoiceNumber": {
+          "type": ["string", "null"],
+          "description": "Commercial invoice number when applicable."
+        }
+      }
+    },
+    "carrier": {
+      "type": ["object", "null"],
+      "description": "Requested or assigned carrier and service configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "carrierCode": {
+          "type": ["string", "null"],
+          "description": "Canonical carrier code (e.g. UPS, FEDEX, DHL)."
+        },
+        "carrierName": {
+          "type": ["string", "null"],
+          "description": "Human-readable carrier name."
+        },
+        "serviceCode": {
+          "type": ["string", "null"],
+          "description": "Carrier-specific service product code."
+        },
+        "accountNumber": {
+          "type": ["string", "null"],
+          "description": "Shipper account number with the carrier."
+        },
+        "contractId": {
+          "type": ["string", "null"],
+          "description": "Negotiated contract or rate agreement identifier."
+        }
+      }
+    },
+    "origin": {
+      "description": "Ship-from origin address.",
+      "$ref": "canonical://shared/address"
+    },
+    "destination": {
+      "description": "Ship-to destination address.",
+      "$ref": "canonical://shared/address"
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Packages or handling units included in the shipment.",
+      "items": {
+        "$ref": "canonical://shared/package"
+      }
+    },
+    "weight": {
+      "type": ["object", "null"],
+      "description": "Total shipment weight when not fully represented at package level.",
+      "additionalProperties": false,
+      "required": ["value", "unit"],
+      "properties": {
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Total weight numeric value."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["kg", "lb", "g", "oz"],
+          "description": "Total weight unit of measure."
+        }
+      }
+    },
+    "dimensions": {
+      "type": ["object", "null"],
+      "description": "Total shipment dimensions when not fully represented at package level.",
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Total length dimension value."
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Total width dimension value."
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Total height dimension value."
+        },
+        "unit": {
+          "type": "string",
+          "enum": ["cm", "in", "m"],
+          "description": "Total dimension unit of measure."
+        }
+      }
+    },
+    "serviceLevel": {
+      "type": ["string", "null"],
+      "enum": ["economy", "standard", "express", "overnight", "same_day", null],
+      "description": "Canonical service level abstraction mapped to carrier products."
+    },
+    "metadata": {
+      "description": "Request-level metadata for tracing and integration.",
+      "$ref": "canonical://shared/metadata"
+    },
+    "customs": {
+      "type": ["object", "null"],
+      "description": "Customs and international shipping details.",
+      "additionalProperties": false,
+      "properties": {
+        "isInternational": {
+          "type": ["boolean", "null"],
+          "description": "Whether the shipment crosses international borders."
+        },
+        "incoterm": {
+          "type": ["string", "null"],
+          "enum": ["EXW", "FCA", "CPT", "CIP", "DAP", "DPU", "DDP", "FAS", "FOB", "CFR", "CIF", null],
+          "description": "Incoterms rule governing international trade responsibilities."
+        },
+        "contentsType": {
+          "type": ["string", "null"],
+          "enum": ["merchandise", "documents", "gift", "returned_goods", "sample", "other", null],
+          "description": "Category of shipment contents for customs declaration."
+        },
+        "contentsDescription": {
+          "type": ["string", "null"],
+          "description": "Summary description of goods for customs."
+        },
+        "declaredValue": {
+          "description": "Total declared customs value.",
+          "$ref": "canonical://shared/money"
+        },
+        "dutiesPaid": {
+          "type": ["boolean", "null"],
+          "description": "Whether duties and taxes are prepaid (DDP) by the shipper."
+        },
+        "recipientTaxId": {
+          "type": ["string", "null"],
+          "description": "Recipient tax or VAT identification number."
+        },
+        "exporterTaxId": {
+          "type": ["string", "null"],
+          "description": "Exporter tax identification number (EIN, VAT, etc.)."
+        },
+        "certificateNumber": {
+          "type": ["string", "null"],
+          "description": "Export license or certificate number when required."
+        },
+        "lineItems": {
+          "type": ["array", "null"],
+          "description": "Commercial invoice line items for customs.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["description", "quantity", "unitValue"],
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Description of the goods line."
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Quantity of units in this line."
+              },
+              "unitValue": {
+                "description": "Value per unit.",
+                "$ref": "canonical://shared/money"
+              },
+              "hsCode": {
+                "type": ["string", "null"],
+                "description": "Harmonized System tariff code."
+              },
+              "countryOfOrigin": {
+                "type": ["string", "null"],
+                "pattern": "^[A-Z]{2}$",
+                "description": "ISO 3166-1 alpha-2 country of origin."
+              },
+              "weight": {
+                "type": ["object", "null"],
+                "description": "Line item weight.",
+                "additionalProperties": false,
+                "required": ["value", "unit"],
+                "properties": {
+                  "value": { "type": "number", "exclusiveMinimum": 0, "description": "Weight value." },
+                  "unit": { "type": "string", "enum": ["kg", "lb", "g", "oz"], "description": "Weight unit." }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trackingReferences": {
+      "type": ["array", "null"],
+      "description": "Pre-existing or related tracking references (returns, multi-leg, master tracking).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "value"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["master", "child", "return", "reference", "barcode", "pro_number"],
+            "description": "Semantic type of the tracking reference."
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Tracking or reference number value."
+          },
+          "carrierCode": {
+            "type": ["string", "null"],
+            "description": "Carrier associated with this reference when known."
+          }
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Carrier-, region-, or integration-specific extensible fields for semantic mapping.",
+      "additionalProperties": true
+    }
+  }
+}

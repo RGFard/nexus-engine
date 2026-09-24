@@ -1,0 +1,19 @@
+{
+  "/requestedPackageLineItems[]/dimensions/height": "/packages[]/dimensions/height",
+  "/requestedPackageLineItems[]/dimensions/length": "/packages[]/dimensions/length",
+  "/requestedPackageLineItems[]/dimensions/units": "/packages[]/dimensions/unit",
+  "/requestedPackageLineItems[]/dimensions/width": "/packages[]/dimensions/width",
+  "/requestedPackageLineItems[]/weight/units": "/packages[]/weight/unit",
+  "/requestedPackageLineItems[]/weight/value": "/packages[]/weight/value",
+  "/serviceType": "/carrier/serviceCode",
+  "/recipient/address/city": "/destination/city",
+  "/recipient/address/countryCode": "/destination/countryCode",
+  "/recipient/address/streetLines": "/destination/line1",
+  "/recipient/address/postalCode": "/destination/postalCode",
+  "/recipient/address/stateOrProvinceCode": "/destination/stateOrProvince",
+  "/shipper/address/city": "/origin/city",
+  "/shipper/address/countryCode": "/origin/countryCode",
+  "/shipper/address/streetLines": "/origin/line1",
+  "/shipper/address/postalCode": "/origin/postalCode",
+  "/shipper/address/stateOrProvinceCode": "/origin/stateOrProvince"
+}

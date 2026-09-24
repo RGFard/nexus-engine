@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shipment/shipment-error",
+  "title": "ShipmentError",
+  "description": "Canonical error envelope for shipment create, update, and tracking operations.",
+  "x-canonical-version": "2.0.0",
+  "x-canonical-domain": "shipment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message"],
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable canonical error code for programmatic handling."
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable error summary."
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "Correlation identifier tying the error to a request or trace."
+    },
+    "severity": {
+      "type": ["string", "null"],
+      "enum": ["info", "warning", "error", "critical", null],
+      "description": "Error severity for monitoring and routing."
+    },
+    "category": {
+      "type": ["string", "null"],
+      "enum": [
+        "validation",
+        "authentication",
+        "authorization",
+        "not_found",
+        "rate_limit",
+        "carrier",
+        "timeout",
+        "internal",
+        null
+      ],
+      "description": "High-level error category."
+    },
+    "providerError": {
+      "type": ["object", "null"],
+      "description": "Upstream carrier or provider error details.",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": ["string", "null"],
+          "description": "Name of the upstream provider or carrier."
+        },
+        "providerCode": {
+          "type": ["string", "null"],
+          "description": "Provider-native error code."
+        },
+        "providerMessage": {
+          "type": ["string", "null"],
+          "description": "Provider-native error message."
+        },
+        "httpStatus": {
+          "type": ["integer", "null"],
+          "description": "HTTP status returned by the provider when applicable."
+        },
+        "raw": {
+          "type": ["object", "null"],
+          "description": "Opaque provider payload for diagnostics (avoid logging PII in production).",
+          "additionalProperties": true
+        }
+      }
+    },
+    "validationErrors": {
+      "type": ["array", "null"],
+      "description": "Field-level validation failures when the error is schema or business-rule related.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "issue"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "JSON Pointer or logical field path (e.g. /origin/postalCode)."
+          },
+          "issue": {
+            "type": "string",
+            "description": "Description of the validation issue."
+          },
+          "code": {
+            "type": ["string", "null"],
+            "description": "Machine-readable validation rule code."
+          },
+          "rejectedValue": {
+            "description": "Value that failed validation when safe to return."
+          }
+        }
+      }
+    },
+    "metadata": {
+      "description": "Error-level metadata for tracing and integration.",
+      "$ref": "canonical://shared/metadata"
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Integration-specific extensible error context.",
+      "additionalProperties": true
+    }
+  }
+}

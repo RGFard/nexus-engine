@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shared/address",
+  "title": "Address",
+  "description": "Postal or geographic address for origin, destination, billing, or event locations.",
+  "x-canonical-version": "2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["line1", "city", "countryCode"],
+  "properties": {
+    "name": {
+      "type": ["string", "null"],
+      "description": "Recipient or location name (person or company)."
+    },
+    "company": {
+      "type": ["string", "null"],
+      "description": "Company or organization name at this address."
+    },
+    "line1": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary street address line."
+    },
+    "line2": {
+      "type": ["string", "null"],
+      "description": "Secondary address line (suite, unit, building)."
+    },
+    "line3": {
+      "type": ["string", "null"],
+      "description": "Additional address line when needed."
+    },
+    "city": {
+      "type": "string",
+      "minLength": 1,
+      "description": "City or locality name."
+    },
+    "stateOrProvince": {
+      "type": ["string", "null"],
+      "description": "State, province, or region code or name."
+    },
+    "postalCode": {
+      "type": ["string", "null"],
+      "description": "Postal or ZIP code."
+    },
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2 country code."
+    },
+    "residential": {
+      "type": ["boolean", "null"],
+      "description": "Whether the address is residential (vs commercial)."
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "description": "Contact phone number in E.164 or local format."
+    },
+    "email": {
+      "type": ["string", "null"],
+      "format": "email",
+      "description": "Contact email address."
+    }
+  }
+}

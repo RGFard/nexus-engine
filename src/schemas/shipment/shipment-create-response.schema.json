@@ -1,0 +1,241 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical://shipment/shipment-create-response",
+  "title": "ShipmentCreateResponse",
+  "description": "Canonical response after successfully creating a shipment with a carrier or platform. Carrier APIs (FedEx, UPS, DHL, and similar) most often return tracking numbers, service codes, delivery estimates, and labels. Platform-assigned identifiers and lifecycle timestamps are optional and may be synthesized when absent.",
+  "x-canonical-version": "2.1.0",
+  "x-canonical-domain": "shipment",
+  "x-canonical-recommended": ["trackingNumber"],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "shipmentId": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "Platform- or integration-assigned shipment identifier. Rarely present in raw carrier create-shipment responses; may be derived from tracking when synthesizing a full canonical record.",
+      "x-canonical-origin": "platform",
+      "x-canonical-default": {
+        "strategy": "coalesce",
+        "paths": ["/trackingNumber", "/identifiers/masterTrackingNumber"]
+      }
+    },
+    "identifiers": {
+      "type": ["object", "null"],
+      "description": "Additional identifiers returned after creation.",
+      "additionalProperties": false,
+      "properties": {
+        "externalId": {
+          "type": ["string", "null"],
+          "description": "Identifier in an external order or WMS system."
+        },
+        "clientReferenceId": {
+          "type": ["string", "null"],
+          "description": "Client-provided reference echoed from the request."
+        },
+        "masterTrackingNumber": {
+          "type": ["string", "null"],
+          "description": "Master tracking number for multi-piece shipments."
+        }
+      }
+    },
+    "carrier": {
+      "type": ["object", "null"],
+      "description": "Carrier and service assigned to the shipment.",
+      "additionalProperties": false,
+      "properties": {
+        "carrierCode": {
+          "type": ["string", "null"],
+          "description": "Canonical carrier code."
+        },
+        "carrierName": {
+          "type": ["string", "null"],
+          "description": "Human-readable carrier name."
+        },
+        "serviceCode": {
+          "type": ["string", "null"],
+          "description": "Carrier-specific service product code."
+        },
+        "serviceName": {
+          "type": ["string", "null"],
+          "description": "Human-readable service name."
+        }
+      }
+    },
+    "trackingNumber": {
+      "type": ["string", "null"],
+      "description": "Primary carrier tracking number. The most consistently available field across FedEx, UPS, DHL, and similar create-shipment responses."
+    },
+    "trackingNumbers": {
+      "type": ["array", "null"],
+      "description": "All tracking numbers when multiple packages or legs exist.",
+      "items": {
+        "type": "string",
+        "description": "Tracking number for a package or leg."
+      }
+    },
+    "status": {
+      "type": ["string", "null"],
+      "enum": [
+        "created",
+        "label_generated",
+        "pickup_scheduled",
+        "awaiting_pickup",
+        "in_transit",
+        "delivered",
+        "exception",
+        "cancelled"
+      ],
+      "description": "Canonical shipment lifecycle status. Carriers seldom return an equivalent status on create; platforms may default to created after a successful booking.",
+      "x-canonical-origin": "platform",
+      "x-canonical-default": {
+        "strategy": "constant",
+        "value": "created"
+      }
+    },
+    "statusDetail": {
+      "type": ["string", "null"],
+      "description": "Human-readable detail or sub-status from the carrier."
+    },
+    "estimatedDelivery": {
+      "type": ["object", "null"],
+      "description": "Estimated delivery window or date.",
+      "additionalProperties": false,
+      "properties": {
+        "date": {
+          "type": ["string", "null"],
+          "format": "date",
+          "description": "Estimated delivery date (calendar date)."
+        },
+        "dateTime": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Estimated delivery date-time in UTC."
+        },
+        "timeWindowStart": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Start of estimated delivery time window."
+        },
+        "timeWindowEnd": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "End of estimated delivery time window."
+        },
+        "timezone": {
+          "type": ["string", "null"],
+          "description": "IANA timezone for local delivery estimates."
+        }
+      }
+    },
+    "labels": {
+      "type": ["array", "null"],
+      "description": "Shipping labels generated for the shipment.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["format"],
+        "properties": {
+          "packageId": {
+            "type": ["string", "null"],
+            "description": "Package identifier this label applies to."
+          },
+          "format": {
+            "type": "string",
+            "enum": ["PDF", "PNG", "ZPL", "EPL2", "URL"],
+            "description": "Label encoding or delivery format."
+          },
+          "url": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "URL to download the label when hosted remotely."
+          },
+          "content": {
+            "type": ["string", "null"],
+            "description": "Base64-encoded label content when embedded inline."
+          },
+          "trackingNumber": {
+            "type": ["string", "null"],
+            "description": "Tracking number printed on this label."
+          }
+        }
+      }
+    },
+    "documents": {
+      "type": ["array", "null"],
+      "description": "Supporting documents (commercial invoice, customs, COA, etc.).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "format"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "commercial_invoice",
+              "customs_declaration",
+              "certificate_of_origin",
+              "packing_list",
+              "other"
+            ],
+            "description": "Document type classification."
+          },
+          "format": {
+            "type": "string",
+            "enum": ["PDF", "PNG", "URL"],
+            "description": "Document encoding or delivery format."
+          },
+          "url": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "URL to download the document."
+          },
+          "content": {
+            "type": ["string", "null"],
+            "description": "Base64-encoded document content when embedded inline."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "Suggested file name for the document."
+          }
+        }
+      }
+    },
+    "charges": {
+      "type": ["array", "null"],
+      "description": "Rated charges returned at creation time.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "amount"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Charge type (e.g. transportation, fuel, duty)."
+          },
+          "amount": {
+            "description": "Charge amount.",
+            "$ref": "canonical://shared/money"
+          }
+        }
+      }
+    },
+    "createdAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "UTC timestamp when the shipment was created. Usually assigned by the integrating platform, not returned by carrier create APIs.",
+      "x-canonical-origin": "platform",
+      "x-canonical-default": {
+        "strategy": "now"
+      }
+    },
+    "metadata": {
+      "description": "Response-level metadata for tracing and integration.",
+      "$ref": "canonical://shared/metadata"
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Carrier- or integration-specific extensible response fields.",
+      "additionalProperties": true
+    }
+  }
+}
