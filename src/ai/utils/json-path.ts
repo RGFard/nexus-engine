@@ -160,7 +160,11 @@ function setAtSegments(
     }
 
     const childSegments = segments.slice(index + 1);
-    const values = Array.isArray(value) ? value : [value];
+    // A scalar value at an array-notation target (e.g. a shipment-level currency
+    // applied to every /customs/lineItems[]/unitValue/currency) broadcasts to every
+    // existing item rather than only the first — it isn't itself a per-item array.
+    const isBroadcastScalar = !Array.isArray(value);
+    const values = isBroadcastScalar ? [value] : value;
 
     if (values.length > current.length) {
       while (current.length < values.length) {
@@ -168,12 +172,13 @@ function setAtSegments(
       }
     }
 
-    for (let i = 0; i < values.length; i++) {
+    const iterationLength = isBroadcastScalar ? current.length : values.length;
+    for (let i = 0; i < iterationLength; i++) {
       const item = current[i];
       if (item === undefined || item === null) {
         current[i] = {};
       }
-      setAtSegments(current[i], childSegments, 0, values[i]);
+      setAtSegments(current[i], childSegments, 0, isBroadcastScalar ? values[0] : values[i]);
     }
     return;
   }
@@ -185,8 +190,12 @@ function setAtSegments(
   }
 
   if (container[segment.key] === undefined || container[segment.key] === null) {
-    const nextSegment = segments[index + 1];
-    container[segment.key] = nextSegment?.isArray ? [] : {};
+    // This segment isn't array-flagged itself (that case is handled above), so it's
+    // always a plain object here — even when the *next* segment is a `[]` wildcard
+    // (e.g. /customs/lineItems[]/hsCode: "customs" is a container object holding the
+    // "lineItems" array, not an array itself). That next segment creates its own
+    // array when its turn comes, via the isArray branch above.
+    container[segment.key] = {};
   }
 
   setAtSegments(container[segment.key], segments, index + 1, value);

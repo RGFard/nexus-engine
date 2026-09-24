@@ -30,6 +30,24 @@ const DIMENSION_UNIT_MAP: Record<string, string> = {
   millimeter: "mm", millimeters: "mm", mm: "mm",
 };
 
+// Canonical customs contentsType enum: ["merchandise", "documents", "gift",
+// "returned_goods", "sample", "other", null] (from shipment-create-request.schema.json).
+// DHL's Content field ("DOCUMENTS" / "NON_DOCUMENTS") is a documents/not-documents
+// flag rather than a full category, so NON_DOCUMENTS maps to the closest general
+// category, "merchandise".
+const CONTENTS_TYPE_MAP: Record<string, string> = {
+  documents: "documents",
+  document: "documents",
+  non_documents: "merchandise",
+  nondocuments: "merchandise",
+  merchandise: "merchandise",
+  gift: "gift",
+  sample: "sample",
+  returned_goods: "returned_goods",
+  return: "returned_goods",
+  returns: "returned_goods",
+};
+
 export interface TransformContext {
   sourcePayload: unknown;
   mapping: FieldMapping;
@@ -118,6 +136,14 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     return DIMENSION_UNIT_MAP[lower] ?? lower;
   }
 
+  if (step === "normalize:contentsType") {
+    if (typeof value !== "string") {
+      return value;
+    }
+    const key = value.toLowerCase().trim().replace(/[\s-]+/g, "_");
+    return CONTENTS_TYPE_MAP[key] ?? "other";
+  }
+
   if (step === "date:date") {
     if (value === null || value === undefined) {
       return value;
@@ -153,7 +179,7 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
   }
 
   if (step.startsWith("concat:")) {
-    return applyConcat(step, context);
+    return applyConcat(value, step, context);
   }
 
   if (step === "nested:object") {
@@ -196,7 +222,7 @@ function applyExtensionsPassthrough(value: unknown, context: TransformContext): 
   return value;
 }
 
-function applyConcat(step: string, context: TransformContext): unknown {
+function applyConcat(value: unknown, step: string, context: TransformContext): unknown {
   const fieldsPart = step.slice("concat:".length);
   const fields = fieldsPart.split(",").map((f) => f.trim()).filter(Boolean);
 
@@ -205,6 +231,17 @@ function applyConcat(step: string, context: TransformContext): unknown {
   }
 
   const parts = fields.map((field) => {
+    // {N} or {[N]} indexes into the array value already resolved for this mapping's
+    // source field (e.g. StreetLines → line1 taking element 0), rather than naming a
+    // separate absolute source path like the comma-joined field case below. Both forms
+    // are accepted because the model has produced either one for the same operation;
+    // see transformation-generation.prompt.md for the documented canonical form.
+    const indexMatch = field.match(/^\{\[?(\d+)\]?\}$/);
+    if (indexMatch) {
+      const v = Array.isArray(value) ? value[Number(indexMatch[1])] : undefined;
+      return v === null || v === undefined ? "" : String(v);
+    }
+
     const pointer = field.startsWith("/") ? field : `/${field}`;
     const v = getByPath(context.sourcePayload, pointer);
     return v === null || v === undefined ? "" : String(v);

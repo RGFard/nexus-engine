@@ -160,7 +160,9 @@ export class AiMappingService {
       generationMode = "hybrid";
 
       const mappedAfterFirst = new Set(mappings.map((m) => m.targetField));
-      const stillMissing = REQUIRED_TARGET_PATHS.filter((p) => !mappedAfterFirst.has(p));
+      const stillMissing = REQUIRED_TARGET_PATHS.filter(
+        (p) => !mappedAfterFirst.has(p) && !isArrayParentMapped(p, mappedAfterFirst),
+      );
       if (stillMissing.length > 0) {
         log.info({ stillMissing }, "Second AI pass for missing required fields");
         const focusedTargetAnalysis = {
@@ -209,6 +211,18 @@ export class AiMappingService {
     // no unit sibling in the source schema. Inject a companion constant unit mapping for
     // any such target that isn't already mapped. See PARCEL_UNIT_CONVENTIONS below.
     mappings = injectParcelUnitDefaults(mappings);
+
+    // Customs line items: the per-commodity description sibling doesn't survive
+    // deduplicateBySource when the same source field also feeds /customs/contentsDescription,
+    // and some carriers (e.g. DHL) declare currency once at the shipment level rather than
+    // per line item. Both are synthesized here, after dedup, so they aren't clobbered by it.
+    mappings = synthesizeLineItemDescription(mappings, sourceAnalysis);
+    mappings = injectLineItemCurrencyDefault(mappings, sourceAnalysis);
+
+    // /customs/contentsType has a fixed canonical enum; force the normalization step
+    // regardless of what heuristic/AI proposed, the same way parcel unit targets are
+    // deterministically overridden above.
+    mappings = enforceContentsTypeNormalization(mappings);
 
     // Partition by autoApplyThreshold: candidates strictly below go to review, not auto-apply
     const { autoApplyThreshold } = this.config;
@@ -306,21 +320,31 @@ export class AiMappingService {
 
     const parsed = this.parseAiResponse(completionText);
     if (!parsed?.mappings) {
+      log.warn(
+        { responseLength: completionText.length },
+        "AI response could not be parsed into a mappings array — parseAiResponse returned null or no mappings key",
+      );
       return [];
     }
 
     const validTargetPaths = new Set(targetAnalysis.fields.map((f) => f.path));
 
-    return parsed.mappings
+    const filtered = parsed.mappings
       .filter((m) => m.sourceField && m.targetField)
-      .filter((m) => validTargetPaths.has(m.targetField))
-      .map((m) => ({
-        sourceField: m.sourceField,
-        targetField: m.targetField,
-        confidence: clampConfidence(m.confidence ?? 0.75),
-        transformation: m.transformation || "direct",
-        reasoning: m.reasoning || "AI-proposed semantic mapping for fields without strong heuristic match.",
-      }));
+      .filter((m) => validTargetPaths.has(m.targetField));
+
+    log.info(
+      { parsedCount: parsed.mappings.length, acceptedCount: filtered.length },
+      "AI mapping response parsed",
+    );
+
+    return filtered.map((m) => ({
+      sourceField: m.sourceField,
+      targetField: m.targetField,
+      confidence: clampConfidence(m.confidence ?? 0.75),
+      transformation: m.transformation || "direct",
+      reasoning: m.reasoning || "AI-proposed semantic mapping for fields without strong heuristic match.",
+    }));
   }
 
   private validateRequest(request: GenerateMappingRequest): void {
@@ -340,7 +364,16 @@ export class AiMappingService {
         return null;
       }
       return json;
-    } catch {
+    } catch (err) {
+      log.error(
+        {
+          error: err instanceof Error ? err.message : String(err),
+          responseLength: text.length,
+          responseHead: jsonText.slice(0, 500),
+          responseTail: jsonText.slice(-500),
+        },
+        "Failed to parse AI mapping response as JSON",
+      );
       return null;
     }
   }
@@ -666,6 +699,95 @@ function injectParcelUnitDefaults(mappings: FieldMapping[]): FieldMapping[] {
   return companions.length > 0 ? [...mappings, ...companions] : mappings;
 }
 
+// ─── Customs line item completion ────────────────────────────────────────────
+// Commercial-invoice line items require description, quantity, and unitValue.
+// Carriers commonly provide these as siblings under one commodity/line-item
+// object, but two structural gaps keep them from landing on their own:
+//  1. The commodity description also legitimately maps to /customs/contentsDescription
+//     (the customs-level summary). deduplicateBySource keeps only the higher-confidence
+//     target per source field, so the line-item description silently drops.
+//  2. Some carriers (DHL) declare currency once at the shipment level, not per line
+//     item, so there is no direct source field for /customs/lineItems[]/unitValue/currency.
+
+function synthesizeLineItemDescription(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): FieldMapping[] {
+  const alreadyMapped = mappings.some((m) => m.targetField === "/customs/lineItems[]/description");
+  if (alreadyMapped) return mappings;
+
+  const lineItemMapping = mappings.find(
+    (m) => m.targetField.startsWith("/customs/lineItems[]/") && m.targetField !== "/customs/lineItems[]/description",
+  );
+  if (!lineItemMapping) return mappings;
+
+  const parentPath = lineItemMapping.sourceField.replace(/\/[^/]+$/, "");
+  const descriptionField = sourceAnalysis.fields.find(
+    (f) => f.parentPath === parentPath && f.name.toLowerCase() === "description",
+  );
+  if (!descriptionField) return mappings;
+
+  log.info(
+    { sourceField: descriptionField.path, targetField: "/customs/lineItems[]/description" },
+    "Synthesized customs line item description mapping",
+  );
+
+  return [
+    ...mappings,
+    {
+      sourceField: descriptionField.path,
+      targetField: "/customs/lineItems[]/description",
+      confidence: 0.85,
+      transformation: "direct",
+      reasoning: `${descriptionField.path} is the per-commodity description sibling of the already-mapped customs line item fields; it also feeds /customs/contentsDescription, but deduplication only keeps one target per source field.`,
+    },
+  ];
+}
+
+const LINE_ITEM_CURRENCY_PATTERNS: RegExp[] = [
+  /\/DeclaredValueCurrecyCode$/i,
+];
+
+function injectLineItemCurrencyDefault(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): FieldMapping[] {
+  const hasLineItemAmount = mappings.some((m) => m.targetField === "/customs/lineItems[]/unitValue/amount");
+  const alreadyMapped = mappings.some((m) => m.targetField === "/customs/lineItems[]/unitValue/currency");
+  if (!hasLineItemAmount || alreadyMapped) return mappings;
+
+  const currencyField = sourceAnalysis.fields.find((f) =>
+    LINE_ITEM_CURRENCY_PATTERNS.some((p) => p.test(f.path)),
+  );
+  if (!currencyField) return mappings;
+
+  log.info(
+    { sourceField: currencyField.path, targetField: "/customs/lineItems[]/unitValue/currency" },
+    "Injected shipment-level currency default for customs line items",
+  );
+
+  return [
+    ...mappings,
+    {
+      sourceField: currencyField.path,
+      targetField: "/customs/lineItems[]/unitValue/currency",
+      confidence: 0.8,
+      transformation: "cast:string|normalize:currency",
+      reasoning:
+        "DHL declares currency once at the shipment level (DeclaredValueCurrecyCode); applied to every " +
+        "customs line item's unitValue since there is no per-line-item currency field.",
+    },
+  ];
+}
+
+function enforceContentsTypeNormalization(mappings: FieldMapping[]): FieldMapping[] {
+  return mappings.map((m) =>
+    m.targetField === "/customs/contentsType" && !m.transformation.includes("normalize:contentsType")
+      ? { ...m, transformation: "cast:string|normalize:contentsType" }
+      : m,
+  );
+}
+
 // ── Required-field gate (hasUnmappedRequired) ────────────────────────────────
 //
 // A required field counts against the AI-fallback gate ONLY when every ancestor
@@ -695,12 +817,20 @@ function isTrulyUnmappedRequired(
   if (mappedTargets.has(field.path)) return false;
 
   // Array parent: covered implicitly when child paths are mapped
-  if (field.kind === "array") {
-    const childPrefix = field.path.replace(/\[\]$/, "") + "[]/";
-    if ([...mappedTargets].some((t) => t.startsWith(childPrefix))) return false;
-  }
+  if (field.kind === "array" && isArrayParentMapped(field.path, mappedTargets)) return false;
 
   return isAncestorChainRequired(field.path, byPath);
+}
+
+/**
+ * An array parent path (e.g. /packages) is never a literal mapping target —
+ * the executor creates the array as a side effect of mapping its children
+ * (e.g. /packages[]/weight/value). So the parent counts as satisfied once
+ * any child leaf path is mapped.
+ */
+function isArrayParentMapped(path: string, mappedTargets: Set<string>): boolean {
+  const childPrefix = `${path.replace(/\[\]$/, "")}[]/`;
+  return [...mappedTargets].some((t) => t.startsWith(childPrefix));
 }
 
 /**
