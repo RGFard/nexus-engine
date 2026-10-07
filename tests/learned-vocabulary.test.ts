@@ -19,11 +19,7 @@ import { loadJson } from "./helpers/load-schema.js";
 const SECRET = "test-secret";
 process.env.VOCAB_SECRET = SECRET;
 process.env.ANTHROPIC_API_KEY = "stub";
-// Exact-name heuristic matches currently plateau at 0.70. The base payload averages
-// ~0.70 with the unknown field unmapped and ~0.73 once it is learned at 1.0, so a
-// 0.71 gate makes the unknown field the deciding factor for the AI call — "AI before
-// accept, no AI after" is then observable regardless of the other fallback gates.
-process.env.AI_FALLBACK_THRESHOLD = "0.71";
+delete process.env.AI_FALLBACK_THRESHOLD;
 delete process.env.LEARNED_VOCAB_DIR;
 
 const { buildApp } = await import("../src/app.js");

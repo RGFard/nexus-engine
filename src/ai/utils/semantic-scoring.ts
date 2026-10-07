@@ -88,6 +88,14 @@ export function findExplicitMapping(
   return undefined;
 }
 
+/** True when some explicit rule claims this source field (whatever its target). */
+function hasExplicitRuleForSource(sourcePath: string): boolean {
+  const sourceLeaf = sourcePath.split("/").filter(Boolean).pop() ?? "";
+  return EXPLICIT_PATH_MAPPINGS.some(
+    (rule) => rule.sourcePattern.test(sourceLeaf) || rule.sourcePattern.test(sourcePath),
+  );
+}
+
 export function tokenSimilarity(a: string, b: string): number {
   const tokensA = new Set(a.split(/[^a-z0-9]+/).filter(Boolean));
   const tokensB = new Set(b.split(/[^a-z0-9]+/).filter(Boolean));
@@ -181,6 +189,7 @@ export function computeSemanticSimilarity(
     parentContext = 0.85;
     reasons.push(`parent_context:${sourceCtx}`);
   } else if (
+    parentContext === 0 &&
     source.parentPath &&
     target.parentPath &&
     tokenSimilarity(normalizeToken(source.parentPath), normalizeToken(target.parentPath)) > 0.5
@@ -216,7 +225,7 @@ export function computeSemanticSimilarity(
     }
   }
 
-  const total = Math.min(
+  let total = Math.min(
     1,
     name * 0.22 +
       semantic * 0.38 +
@@ -225,6 +234,23 @@ export function computeSemanticSimilarity(
       path * 0.08 +
       typeOrExample * 0.06,
   );
+
+  // The weighted blend tops out around 0.70–0.75 even for perfect matches: every
+  // component is capped below 1 and description is 0 for payload-inferred sources.
+  // Exact-name evidence corroborated by path or concept is near-certain, so floor
+  // it above the AI fallback threshold. Fuzzy (token-similarity) matches are untouched,
+  // and sources claimed by an explicit rule keep that rule's routing and confidence
+  // (e.g. top-level /weight/value → /packages[]/weight/value, not /weight/value).
+  if (sourceNorm === targetNorm && !hasExplicitRuleForSource(source.path)) {
+    const stripArrays = (p: string) => p.replace(/\[\]/g, "").toLowerCase();
+    if (stripArrays(source.path) === stripArrays(target.path)) {
+      total = Math.max(total, 0.97);
+      reasons.push("exact_path_match");
+    } else if (sourceConcept && sourceConcept === targetConcept) {
+      total = Math.max(total, 0.9);
+      reasons.push("exact_name_same_concept");
+    }
+  }
 
   return {
     name,
