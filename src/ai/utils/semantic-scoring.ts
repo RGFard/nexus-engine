@@ -81,7 +81,7 @@ export function findExplicitMapping(
         ? rule.targetPattern.test(targetPath)
         : targetNorm === ruleNorm || targetPath.endsWith(rule.targetPath.split("/").pop()!);
       if (targetMatches) {
-        return { confidence: 0.94, reasoning: rule.reasoning };
+        return { confidence: rule.confidence, reasoning: rule.reasoning };
       }
     }
   }

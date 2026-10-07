@@ -10,6 +10,7 @@ import type {
 import { aiLog } from "../utils/ai-logger.js";
 import { inferDeliveryDateTransformation } from "../utils/date-normalize.js";
 import { buildMappingReasoning, computeSemanticSimilarity } from "../utils/semantic-scoring.js";
+import { normalizeToken } from "../data/logistics-synonyms.js";
 import { promptBuilderService } from "./prompt-builder.service.js";
 import { requiredFieldResolverService } from "./required-field-resolver.service.js";
 import { semanticMatcherService } from "./semantic-matcher.service.js";
@@ -109,19 +110,31 @@ export class AiMappingService {
     const heuristicAvg = averageConfidence(mappings);
 
     const mappedTargets = new Set(mappings.map((m) => m.targetField));
+    const mappedSourcesBefore = new Set(mappings.map((m) => m.sourceField));
     const targetByPath = new Map(targetAnalysis.fields.map((f) => [f.path, f]));
     const unmappedRequiredBefore = targetAnalysis.fields
       .filter((f) => isTrulyUnmappedRequired(f, mappedTargets, targetByPath))
       .map((f) => f.path);
 
+    // heuristicAvg only reflects the confidence of fields that DID map, and
+    // hasUnmappedRequired only looks at unmapped TARGET fields that are schema-
+    // required — neither notices plausible address/contact/identifier source data
+    // (e.g. SAP's PSTLZ_E/REGIO_E/NAME1_E/TELF1_E) sitting unmapped simply because
+    // nothing recognized it, while the fields that DID map happen to be genuinely
+    // high-confidence. See isPlausibleUnmappedField below.
+    const unmappedPlausibleFields = sourceAnalysis.fields
+      .filter((f) => !mappedSourcesBefore.has(f.path) && isPlausibleUnmappedField(f))
+      .map((f) => f.path);
+
     const noMappingsFound = mappings.length === 0;
     const belowThreshold = heuristicAvg < this.config.aiFallbackThreshold;
     const hasUnmappedRequired = unmappedRequiredBefore.length > 0;
+    const hasUnmappedPlausibleFields = unmappedPlausibleFields.length > 0;
 
     const needsAi =
       this.config.aiFallbackEnabled &&
       this.anthropic &&
-      (noMappingsFound || belowThreshold || hasUnmappedRequired);
+      (noMappingsFound || belowThreshold || hasUnmappedRequired || hasUnmappedPlausibleFields);
 
     let generationMode: "heuristic" | "hybrid" | "ai" = needsAi ? "hybrid" : "heuristic";
 
@@ -130,7 +143,6 @@ export class AiMappingService {
     // set and not the first — those are what get queued in pending_vocabulary.
     const preAiKeys = new Set(mappings.map(mappingKey));
     const aiKeys = new Set<string>();
-
 
     log.info(
       {
@@ -141,6 +153,8 @@ export class AiMappingService {
         belowThreshold,
         hasUnmappedRequired,
         unmappedRequired: unmappedRequiredBefore,
+        hasUnmappedPlausibleFields,
+        unmappedPlausibleFields,
         aiFallbackEnabled: this.config.aiFallbackEnabled,
         hasAnthropicKey: Boolean(this.anthropic),
         needsAi,
@@ -154,11 +168,14 @@ export class AiMappingService {
           heuristicAvg,
           threshold: this.config.aiFallbackThreshold,
           unmappedRequired: unmappedRequiredBefore.length,
+          unmappedPlausibleFields: unmappedPlausibleFields.length,
           reason: noMappingsFound
             ? "no_mappings_found"
             : belowThreshold
               ? "below_confidence_threshold"
-              : "unmapped_required_fields",
+              : hasUnmappedRequired
+                ? "unmapped_required_fields"
+                : "unmapped_plausible_source_fields",
         },
         "AI fallback triggered for semantic mapping",
       );
@@ -251,6 +268,23 @@ export class AiMappingService {
     // regardless of what heuristic/AI proposed, the same way parcel unit targets are
     // deterministically overridden above.
     mappings = enforceContentsTypeNormalization(mappings);
+
+    // SAP delivery documents share one weight-unit field (GEWEI) across both net (NTGEW)
+    // and gross (BRGEW) weight in the same record. GEWEI is already wired to
+    // /packages[]/weight/unit; when BRGEW (or any source) lands on the top-level
+    // /weight/value with no unit sibling, borrow GEWEI for /weight/unit too — same
+    // shipment-level-value-fills-a-per-item-gap pattern as the customs currency default.
+    mappings = injectTopLevelWeightUnitDefault(mappings, sourceAnalysis);
+
+    // Any target whose schema declares format: "date" or "date-time" has exactly one
+    // correct date step (date:date vs date:iso8601) — that's a fixed fact readable off the
+    // target schema, not a judgment call. Enforced deterministically here for every such
+    // target rather than trusting whichever step the heuristic/AI happened to pick, the
+    // same way contentsType's enum is above. This used to be hardcoded to just
+    // /metadata/createdAt and /updatedAt; generalized after finding /estimatedDelivery/
+    // dateTime, /timeWindowStart, /timeWindowEnd, and the response schema's top-level
+    // /createdAt have the identical exposure with zero coverage.
+    mappings = enforceDateFormatTransformation(mappings, targetByPath);
 
     // Partition by autoApplyThreshold: candidates strictly below go to review, not auto-apply
     const { autoApplyThreshold } = this.config;
@@ -889,12 +923,127 @@ function injectLineItemCurrencyDefault(
   ];
 }
 
+const TOP_LEVEL_WEIGHT_UNIT_PATTERNS: RegExp[] = [
+  /^\/GEWEI$/i,
+];
+
+function injectTopLevelWeightUnitDefault(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): FieldMapping[] {
+  const hasTopLevelWeightValue = mappings.some((m) => m.targetField === "/weight/value");
+  const alreadyMapped = mappings.some((m) => m.targetField === "/weight/unit");
+  if (!hasTopLevelWeightValue || alreadyMapped) return mappings;
+
+  const unitField = sourceAnalysis.fields.find((f) =>
+    TOP_LEVEL_WEIGHT_UNIT_PATTERNS.some((p) => p.test(f.path)),
+  );
+  if (!unitField) return mappings;
+
+  log.info(
+    { sourceField: unitField.path, targetField: "/weight/unit" },
+    "Injected shipment-level weight unit default from shared SAP unit field",
+  );
+
+  return [
+    ...mappings,
+    {
+      sourceField: unitField.path,
+      targetField: "/weight/unit",
+      confidence: 0.9,
+      transformation: "cast:string|normalize:weightUnit",
+      reasoning:
+        "SAP delivery documents share one weight-unit field (GEWEI) across both net (NTGEW) and " +
+        "gross (BRGEW) weight in the same record; applied here since /weight/value is mapped but " +
+        "has no unit of its own.",
+    },
+  ];
+}
+
 function enforceContentsTypeNormalization(mappings: FieldMapping[]): FieldMapping[] {
   return mappings.map((m) =>
     m.targetField === "/customs/contentsType" && !m.transformation.includes("normalize:contentsType")
       ? { ...m, transformation: "cast:string|normalize:contentsType" }
       : m,
   );
+}
+
+/**
+ * Any target field whose schema declares `format: "date"` or `format: "date-time"` has
+ * exactly one transformation that can possibly produce a schema-valid result — read
+ * directly off the target schema, not guessed from the target path's name (which is what
+ * both isDeliveryDateMapping and the AI itself otherwise rely on, and neither covers every
+ * date-ish target). Enforced for both directions: a date-time value into a strict
+ * `format: "date"` target (e.g. ajv's date-time string into /estimatedDelivery/date) is
+ * just as invalid as the reverse.
+ */
+function enforceDateFormatTransformation(
+  mappings: FieldMapping[],
+  targetByPath: Map<string, SchemaFieldDescriptor>,
+): FieldMapping[] {
+  return mappings.map((m) => {
+    const format = targetByPath.get(m.targetField)?.metadata?.format;
+    if (format !== "date" && format !== "date-time") return m;
+
+    const correctStep = format === "date-time" ? "date:iso8601" : "date:date";
+    const hasArrayFirst = m.transformation.split("|").includes("array:first");
+    const transformation = hasArrayFirst ? `array:first|${correctStep}` : correctStep;
+    return m.transformation === transformation ? m : { ...m, transformation };
+  });
+}
+
+// ── Plausible-unmapped-field gate (hasUnmappedPlausibleFields) ───────────────
+//
+// Catches address/contact/identifier-shaped source fields left unmapped after
+// the heuristic pass, even when they aren't schema-required and the fields that
+// DID map are genuinely high-confidence. This can't rely on already recognizing
+// the field's meaning (LOGISTICS_CONCEPTS/EXPLICIT_PATH_MAPPINGS already do that,
+// and if they matched, the field wouldn't be unmapped) — so it uses two
+// carrier-agnostic, language-agnostic-ish signals instead:
+//   1. The field's example value has a recognizable shape (postal code, phone,
+//      email) regardless of what the field happens to be named.
+//   2. The field's name carries a common identity/contact stem, including SAP/EDI
+//      abbreviations (PSTLZ, TELF) not covered by LOGISTICS_CONCEPTS' synonyms.
+// This is deliberately a cheap trigger signal, not a mapping decision — AI still
+// has to work out where each field actually goes.
+
+const PLAUSIBLE_FIELD_NAME_STEMS = [
+  "name", "company", "contact", "person",
+  "email", "phone", "telephone", "mobile", "fax",
+  "region", "state", "province",
+  // SAP/EDI abbreviations: PSTLZ (Postleitzahl/postal code), TELF (Telefon/phone),
+  // REGIO (Region). Listed explicitly rather than relying on "region" above —
+  // normalizeToken strips the field's underscore separator (REGIO_E -> "regioe"),
+  // which does not contain the substring "region".
+  "pstlz", "telf", "regio",
+];
+
+function looksLikePostalCode(value: string): boolean {
+  return /^[A-Za-z0-9][A-Za-z0-9 -]{2,9}$/.test(value) && /\d/.test(value);
+}
+
+function looksLikePhoneNumber(value: string): boolean {
+  return /^\+?[0-9][0-9()\- .]{6,17}$/.test(value);
+}
+
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function isPlausibleUnmappedField(field: SchemaFieldDescriptor): boolean {
+  if (field.kind !== "primitive") return false;
+
+  const nameNorm = normalizeToken(field.name);
+  if (PLAUSIBLE_FIELD_NAME_STEMS.some((stem) => nameNorm.includes(stem))) {
+    return true;
+  }
+
+  if (typeof field.exampleValue === "string") {
+    const v = field.exampleValue.trim();
+    return looksLikePostalCode(v) || looksLikePhoneNumber(v) || looksLikeEmail(v);
+  }
+
+  return false;
 }
 
 // ── Required-field gate (hasUnmappedRequired) ────────────────────────────────

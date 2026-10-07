@@ -321,47 +321,69 @@ export const LOGISTICS_CONCEPTS: LogisticsConcept[] = [
   },
 ];
 
-/** Explicit source→target path mappings for high-confidence logistics pairs */
+/**
+ * Explicit source→target path mappings for high-confidence logistics pairs.
+ *
+ * `confidence` is tiered by how much structural certainty the rule actually
+ * represents, not a single blanket number:
+ *  - 0.96: fixed, unambiguous vocabulary codes (e.g. SAP data-dictionary field
+ *    names) — a pure lookup with no renaming risk and no assumption involved.
+ *  - 0.92: suffix/pattern matches on a distinctive multi-word carrier field
+ *    name — still a direct 1:1 rename, but matched by regex suffix rather
+ *    than an exact fixed code, so marginally less certain.
+ *  - 0.85: rules that embed a structural assumption beyond pure renaming
+ *    (e.g. routing top-level shipment weight to "the first package", which is
+ *    wrong for genuine multi-package shipments; or bucketing a carrier code
+ *    into /extensions because there's no better canonical home for it).
+ */
 export const EXPLICIT_PATH_MAPPINGS: Array<{
   sourcePattern: RegExp;
   targetPath: string;
   /** When present, overrides the loose endsWith check — only fires when targetPath matches exactly */
   targetPattern?: RegExp;
+  confidence: number;
   reasoning: string;
 }> = [
   {
     sourcePattern: /estimatedDeliveryTimestamp$/i,
     targetPath: "/estimatedDelivery/dateTime",
+    confidence: 0.92,
     reasoning: "Estimated delivery timestamp maps to canonical estimated delivery date-time.",
   },
   {
     sourcePattern: /deliveryDate$/i,
     targetPath: "/estimatedDelivery/date",
+    confidence: 0.92,
     reasoning: "Delivery date represents the estimated delivery calendar date.",
   },
   {
     sourcePattern: /PackageWeight\/Weight$/i,
     targetPath: "/packages[]/weight/value",
+    confidence: 0.92,
     reasoning: "Package weight numeric value maps to canonical weight value.",
   },
   {
     sourcePattern: /PackageWeight\/UnitOfMeasurement\/Code$/i,
     targetPath: "/packages[]/weight/unit",
+    confidence: 0.92,
     reasoning: "Package weight unit code maps to canonical weight unit.",
   },
   {
     sourcePattern: /consigneePostalCode$/i,
     targetPath: "/destination/postalCode",
+    confidence: 0.92,
     reasoning: "Consignee postal code is the destination postal code.",
   },
   {
     sourcePattern: /shipperPostalCode$/i,
     targetPath: "/origin/postalCode",
+    confidence: 0.92,
     reasoning: "Shipper postal code is the origin postal code.",
   },
   {
     sourcePattern: /PackagingType\/Code$/i,
     targetPath: "/extensions/packagingTypeCode",
+    confidence: 0.85,
     reasoning: "UPS packaging type code is carrier-specific; route to extensions.",
   },
   {
@@ -370,6 +392,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^\/weight\/value$/,
     targetPath: "/packages[]/weight/value",
     targetPattern: /^\/packages(?:\[\])?\/weight\/value$/,
+    confidence: 0.85,
     reasoning: "Top-level shipment weight value maps to the first package's weight value.",
   },
   {
@@ -377,6 +400,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^\/weight\/units?$/,
     targetPath: "/packages[]/weight/unit",
     targetPattern: /^\/packages(?:\[\])?\/weight\/unit$/,
+    confidence: 0.85,
     reasoning: "Top-level weight unit/units maps to the canonical package weight unit.",
   },
   // ── SAP/ERP flat-format field mappings ────────────────────────────────────
@@ -388,6 +412,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^NTGEW$/i,
     targetPath: "/packages[]/weight/value",
     targetPattern: /^\/packages(?:\[\])?\/weight\/value$/,
+    confidence: 0.96,
     reasoning: "SAP NTGEW (net weight) maps to the canonical package weight value.",
   },
   {
@@ -396,6 +421,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^GEWEI$/i,
     targetPath: "/packages[]/weight/unit",
     targetPattern: /^\/packages(?:\[\])?\/weight\/unit$/,
+    confidence: 0.96,
     reasoning: "SAP GEWEI (weight unit) maps to the canonical package weight unit.",
   },
   {
@@ -403,6 +429,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^LFIMG$/i,
     targetPath: "/packages[]/quantity",
     targetPattern: /^\/packages(?:\[\])?\/quantity$/,
+    confidence: 0.96,
     reasoning: "SAP LFIMG (delivery quantity) maps to the canonical package quantity.",
   },
   {
@@ -410,6 +437,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^MATNR$/i,
     targetPath: "/packages[]/sku",
     targetPattern: /^\/packages(?:\[\])?\/sku$/,
+    confidence: 0.96,
     reasoning: "SAP MATNR (material number) maps to the canonical package SKU.",
   },
   {
@@ -417,6 +445,7 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^ARKTX$/i,
     targetPath: "/packages[]/description",
     targetPattern: /^\/packages(?:\[\])?\/description$/,
+    confidence: 0.96,
     reasoning: "SAP ARKTX (article short text) maps to the canonical package description.",
   },
   // ── SAP address fields ────────────────────────────────────────────────────
@@ -426,36 +455,42 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     sourcePattern: /^STRAS_S$/i,
     targetPath: "/origin/line1",
     targetPattern: /^\/origin\/line1$/,
+    confidence: 0.96,
     reasoning: "SAP STRAS_S (Straße Sender — sender street) maps to the canonical origin address line 1.",
   },
   {
     sourcePattern: /^ORT01_S$/i,
     targetPath: "/origin/city",
     targetPattern: /^\/origin\/city$/,
+    confidence: 0.96,
     reasoning: "SAP ORT01_S (Ort Sender — sender city) maps to the canonical origin city.",
   },
   {
     sourcePattern: /^LAND1_S$/i,
     targetPath: "/origin/countryCode",
     targetPattern: /^\/origin\/countryCode$/,
+    confidence: 0.96,
     reasoning: "SAP LAND1_S (Land Sender — sender country) maps to the canonical origin country code.",
   },
   {
     sourcePattern: /^STRAS_E$/i,
     targetPath: "/destination/line1",
     targetPattern: /^\/destination\/line1$/,
+    confidence: 0.96,
     reasoning: "SAP STRAS_E (Straße Empfänger — recipient street) maps to the canonical destination address line 1.",
   },
   {
     sourcePattern: /^ORT01_E$/i,
     targetPath: "/destination/city",
     targetPattern: /^\/destination\/city$/,
+    confidence: 0.96,
     reasoning: "SAP ORT01_E (Ort Empfänger — recipient city) maps to the canonical destination city.",
   },
   {
     sourcePattern: /^LAND1_E$/i,
     targetPath: "/destination/countryCode",
     targetPattern: /^\/destination\/countryCode$/,
+    confidence: 0.96,
     reasoning: "SAP LAND1_E (Land Empfänger — recipient country) maps to the canonical destination country code.",
   },
 ];

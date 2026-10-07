@@ -6,7 +6,10 @@ Normalize heterogeneous carrier or legacy schemas toward a canonical target mode
 
 1. Map synonyms to canonical names (e.g. `zip` → `postalCode`). Only use target paths that exist in the provided target fields list — never invent or hallucinate target paths.
 2. Preserve semantic type intent (address blocks, money, weight/dimensions, metadata).
-3. Route unknown carrier-specific fields to `extensions` on the canonical side when no direct target exists.
+3. Route unknown carrier-specific fields to `extensions` on the canonical side — either when no
+   direct target exists, or when one exists structurally but isn't the right semantic fit (e.g. a
+   volume unit is not a dimension unit just because `/dimensions/unit` is a valid path). The
+   presence of a plausible-looking target path is not itself a reason to use it.
 4. Respect ISO codes for country (`countryCode`) and currency (`currency`).
 5. Do not invent required canonical fields; flag unmapped required targets.
 6. Each source field must map to exactly ONE target field — the best semantic match. Never fan out a single source field to multiple unrelated target fields.

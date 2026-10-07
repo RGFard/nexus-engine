@@ -23,9 +23,9 @@ shown; nothing in this table is a placeholder to be filled in with your own brac
 | `array:map` | Map each array element |
 | `extensions:passthrough` | Move to extensions bucket |
 | `constant:"literal value"` | Inject a fixed value, always double-quoted even for a string (e.g. `constant:"oz"`); use `constant:true`, `constant:42`, or `constant:null` (unquoted) for non-string literals |
-| `date:date` | Normalize to canonical calendar date `YYYY-MM-DD` (UPS `YYYYMMDD`, DHL `YYYY-MM-DD`, ISO date-time sources) |
-| `date:iso8601` | Normalize to ISO 8601 UTC date-time (FedEx timestamps, etc.) |
-| `date:canonical` | Pick `date:date` or `date:iso8601` based on target path (`/estimatedDelivery/date` vs `/dateTime`) |
+| `date:date` | Normalize to canonical calendar date `YYYY-MM-DD` (UPS `YYYYMMDD`, DHL `YYYY-MM-DD`, ISO date-time sources) — use **only** when the target field's schema type is `format: "date"` |
+| `date:iso8601` | Normalize to ISO 8601 UTC date-time — use for **any** target whose schema type is `format: "date-time"`, not just delivery timestamps. This includes fields like `/metadata/createdAt` and `/metadata/updatedAt`, not only `/estimatedDelivery/dateTime` or carrier-specific timestamps. `date:date` on a `date-time` target produces a date-only string that fails schema validation. |
+| `date:canonical` | Pick `date:date` or `date:iso8601` based on target path (`/estimatedDelivery/date` vs `/dateTime`) — a shorthand for that one pair; for any other date field, check the target's actual `format` in the target fields list rather than guessing from the path name |
 
 Combine steps with `|` (e.g. `direct|normalize:countryCode`, or `array:first|direct` for
 an array source mapped to a scalar target).

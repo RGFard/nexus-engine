@@ -160,6 +160,7 @@ function fieldLine(f: {
   description?: string;
   isExtension: boolean;
   exampleValue?: unknown;
+  metadata?: Record<string, unknown>;
 }): Record<string, unknown> {
   return {
     path: f.path,
@@ -170,6 +171,11 @@ function fieldLine(f: {
     isExtension: f.isExtension,
     ...(f.description ? { description: f.description } : {}),
     ...(f.exampleValue !== undefined ? { example: f.exampleValue } : {}),
+    // format/enum are schema *constraints*, not just hints — e.g. a target with
+    // format: "date-time" must not be filled with a date:date (date-only) transformation,
+    // and a target with an enum must not receive a value outside it.
+    ...(f.metadata?.format ? { format: f.metadata.format } : {}),
+    ...(f.metadata?.enum ? { enum: f.metadata.enum } : {}),
   };
 }
 
