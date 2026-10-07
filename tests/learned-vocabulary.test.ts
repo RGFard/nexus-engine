@@ -218,6 +218,62 @@ describe("global learned vocabulary — accept-and-remember", () => {
   });
 });
 
+describe("exact-path matches and explicit-rule routes are never learned from AI", () => {
+  it("ShipStation: AI can't re-route rule-routed top-level weight, and nothing weight-related is queued", async () => {
+    const shipstation = await loadJson("tests/fixtures/shipstation-shipment.json");
+    // Verbatim shape of what the live model proposed for this fixture.
+    aiResponse = [
+      { sourceField: "/weight/value", targetField: "/weight/value", confidence: 0.9, transformation: "direct", reasoning: "Same path." },
+      { sourceField: "/weight/units", targetField: "/weight/unit", confidence: 0.9, transformation: "direct", reasoning: "Unit." },
+      { sourceField: "/items[]/name", targetField: "/packages[]/description", confidence: 0.85, transformation: "array:map", reasoning: "Item name." },
+    ];
+    const before = aiCalls;
+    const res = await normalize(shipstation);
+    // AI still runs (twice: ShipStation has no ship-from, so the second pass fires too).
+    assert.ok(aiCalls - before >= 1, "AI still runs for the genuinely missing fields");
+
+    const bySource = (src: string) =>
+      res.plan.mappings.filter((m: any) => m.sourceField === src).map((m: any) => m.targetField);
+    assert.deepEqual(bySource("/weight/value"), ["/packages[]/weight/value"]);
+    assert.deepEqual(bySource("/weight/units"), ["/packages[]/weight/unit"]);
+    assert.ok(res.targetPayload.packages[0].weight, "required package weight must survive");
+    assert.equal(res.targetPayload.packages[0].weight.value, 5.2);
+
+    const pending = await listPending();
+    assert.deepEqual(
+      pending.filter((p) => p.sourceField.startsWith("/weight/")),
+      [],
+      "rule-routed / exact-path weight fields must never be queued",
+    );
+    // Unrelated AI gap-fills on the same request are still learned.
+    assert.ok(pending.some((p) => p.sourceField === "/items[]/name"));
+  });
+
+  it("an AI-proposed exact-path pair is never queued, even when the heuristic left the source free", async () => {
+    // Inline target with no /packages: the /weight/value rule has no target here, so
+    // the heuristic doesn't route it and the AI's exact-path pair is applied — but
+    // as an exact path it is not vocabulary and must not be queued.
+    const targetSchema = {
+      type: "object",
+      properties: {
+        weight: { type: "object", properties: { value: { type: "number" }, unit: { type: "string" } } },
+        phone: { type: "string" },
+      },
+    };
+    aiResponse = [
+      { sourceField: "/weight/value", targetField: "/weight/value", confidence: 0.95, transformation: "direct", reasoning: "Same path." },
+    ];
+    const res = await app.inject({
+      method: "POST",
+      url: "/ai/normalize",
+      payload: { sourcePayload: { weight: { value: 3, unit: "kg" }, telNo: "+1 212 555 0100" }, targetSchema },
+    });
+    assert.equal(res.statusCode, 200, res.body);
+    const pending = await listPending();
+    assert.equal(pending.some((p) => p.sourceField === "/weight/value"), false);
+  });
+});
+
 describe("global learned vocabulary — precedence and carrier isolation", () => {
   const noAiConfig = () => ({ ...loadAiConfig(), anthropicApiKey: undefined });
   const requestSchema = () => schemaRegistry.get("shipment", "shipment-create-request")!.schema;

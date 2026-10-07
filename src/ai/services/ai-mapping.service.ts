@@ -9,7 +9,11 @@ import type {
 } from "../models/mapping.types.js";
 import { aiLog } from "../utils/ai-logger.js";
 import { inferDeliveryDateTransformation } from "../utils/date-normalize.js";
-import { buildMappingReasoning, computeSemanticSimilarity } from "../utils/semantic-scoring.js";
+import {
+  buildMappingReasoning,
+  computeSemanticSimilarity,
+  findExplicitMapping,
+} from "../utils/semantic-scoring.js";
 import { normalizeToken } from "../data/logistics-synonyms.js";
 import { promptBuilderService } from "./prompt-builder.service.js";
 import { requiredFieldResolverService } from "./required-field-resolver.service.js";
@@ -144,6 +148,14 @@ export class AiMappingService {
     const preAiKeys = new Set(mappings.map(mappingKey));
     const aiKeys = new Set<string>();
 
+    // Routes the heuristic took via an explicit rule are deterministic decisions, not
+    // guesses: AI may not re-route those sources or take those targets. Without this,
+    // ShipStation's top-level /weight/value and /weight/units (rule-routed to the
+    // required /packages[]/weight/*) lost to AI's exact-path /weight/* proposals in
+    // deduplicateBySource, dropping the package weight and queuing the self-mappings
+    // as "learned" vocabulary.
+    const ruleRoutes = explicitRuleRoutes(mappings);
+
     log.info(
       {
         candidateCount: candidates.length,
@@ -195,6 +207,7 @@ export class AiMappingService {
         );
         this.mappingCache.set(cacheKey, aiMappings);
       }
+      aiMappings = dropRuleConflicts(aiMappings, ruleRoutes);
       for (const m of aiMappings) aiKeys.add(mappingKey(m));
       mappings = mergeMappings(mappings, aiMappings);
       // Role-context guard must run BEFORE deduplication: remove cross-context AI mappings
@@ -213,11 +226,9 @@ export class AiMappingService {
           ...targetAnalysis,
           fields: targetAnalysis.fields.filter((f) => stillMissing.includes(f.path)),
         };
-        const secondAiMappings = await this.invokeAiMappings(
-          request,
-          sourceAnalysis,
-          focusedTargetAnalysis,
-          candidates,
+        const secondAiMappings = dropRuleConflicts(
+          await this.invokeAiMappings(request, sourceAnalysis, focusedTargetAnalysis, candidates),
+          ruleRoutes,
         );
         for (const m of secondAiMappings) aiKeys.add(mappingKey(m));
         mappings = mergeMappings(mappings, secondAiMappings);
@@ -497,9 +508,15 @@ export class AiMappingService {
     clientId: string | undefined,
   ): Promise<void> {
     const sourcePaths = new Set(sourceAnalysis.fields.map((f) => f.path));
+    // Exact-path pairs are never vocabulary: the heuristic resolves them itself.
     const fromAi = finalMappings.filter((m) => {
       const key = mappingKey(m);
-      return aiKeys.has(key) && !preAiKeys.has(key) && sourcePaths.has(m.sourceField);
+      return (
+        aiKeys.has(key) &&
+        !preAiKeys.has(key) &&
+        sourcePaths.has(m.sourceField) &&
+        !isExactPathPair(m)
+      );
     });
     if (fromAi.length === 0) return;
 
@@ -1124,6 +1141,51 @@ function isAncestorChainRequired(
 
 function mappingKey(m: Pick<FieldMapping, "sourceField" | "targetField">): string {
   return `${m.sourceField}\u0000${m.targetField}`;
+}
+
+/** Source and target are the same path (ignoring array markers and case). */
+function isExactPathPair(m: Pick<FieldMapping, "sourceField" | "targetField">): boolean {
+  const norm = (p: string) => p.replace(/\[\]/g, "").toLowerCase();
+  return norm(m.sourceField) === norm(m.targetField);
+}
+
+interface RuleRoutes {
+  pairs: Set<string>;
+  sources: Set<string>;
+  targets: Set<string>;
+}
+
+/** Pre-AI mappings that an explicit EXPLICIT_PATH_MAPPINGS rule produced. */
+function explicitRuleRoutes(mappings: FieldMapping[]): RuleRoutes {
+  const routes: RuleRoutes = { pairs: new Set(), sources: new Set(), targets: new Set() };
+  for (const m of mappings) {
+    if (!findExplicitMapping(m.sourceField, m.targetField)) continue;
+    routes.pairs.add(mappingKey(m));
+    routes.sources.add(m.sourceField);
+    routes.targets.add(m.targetField);
+  }
+  return routes;
+}
+
+/** Drop AI proposals that would re-route a rule-routed source or take a rule-routed target. */
+function dropRuleConflicts(ai: FieldMapping[], routes: RuleRoutes): FieldMapping[] {
+  if (routes.pairs.size === 0) return ai;
+  const kept = ai.filter(
+    (m) =>
+      routes.pairs.has(mappingKey(m)) ||
+      (!routes.sources.has(m.sourceField) && !routes.targets.has(m.targetField)),
+  );
+  if (kept.length < ai.length) {
+    log.info(
+      {
+        dropped: ai
+          .filter((m) => !kept.includes(m))
+          .map((m) => `${m.sourceField} -> ${m.targetField}`),
+      },
+      "AI proposals dropped: conflict with explicit-rule routes",
+    );
+  }
+  return kept;
 }
 
 // ── Custom vocabulary confidence ──────────────────────────────────────────────
