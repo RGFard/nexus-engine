@@ -1,0 +1,98 @@
+[
+  {
+    "inputField": "/requestedPackageLineItems[]/dimensions/height",
+    "canonicalField": "/packages[]/dimensions/height",
+    "transformation": "array:map",
+    "acceptedAt": "2026-10-07T18:40:30.225Z"
+  },
+  {
+    "inputField": "/requestedPackageLineItems[]/dimensions/length",
+    "canonicalField": "/packages[]/dimensions/length",
+    "transformation": "array:map",
+    "acceptedAt": "2026-10-07T18:40:30.225Z"
+  },
+  {
+    "inputField": "/requestedPackageLineItems[]/dimensions/units",
+    "canonicalField": "/packages[]/dimensions/unit",
+    "transformation": "cast:string|normalize:dimensionUnit",
+    "acceptedAt": "2026-10-07T18:40:30.226Z"
+  },
+  {
+    "inputField": "/requestedPackageLineItems[]/dimensions/width",
+    "canonicalField": "/packages[]/dimensions/width",
+    "transformation": "array:map",
+    "acceptedAt": "2026-10-07T18:40:30.227Z"
+  },
+  {
+    "inputField": "/requestedPackageLineItems[]/weight/units",
+    "canonicalField": "/packages[]/weight/unit",
+    "transformation": "cast:string|normalize:weightUnit",
+    "acceptedAt": "2026-10-07T18:40:30.227Z"
+  },
+  {
+    "inputField": "/requestedPackageLineItems[]/weight/value",
+    "canonicalField": "/packages[]/weight/value",
+    "transformation": "array:map",
+    "acceptedAt": "2026-10-07T18:40:30.228Z"
+  },
+  {
+    "inputField": "/recipient/address/city",
+    "canonicalField": "/destination/city",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.228Z"
+  },
+  {
+    "inputField": "/recipient/address/countryCode",
+    "canonicalField": "/destination/countryCode",
+    "transformation": "direct|normalize:countryCode",
+    "acceptedAt": "2026-10-07T18:40:30.229Z"
+  },
+  {
+    "inputField": "/recipient/address/streetLines",
+    "canonicalField": "/destination/line1",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.229Z"
+  },
+  {
+    "inputField": "/recipient/address/postalCode",
+    "canonicalField": "/destination/postalCode",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.230Z"
+  },
+  {
+    "inputField": "/recipient/address/stateOrProvinceCode",
+    "canonicalField": "/destination/stateOrProvince",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.230Z"
+  },
+  {
+    "inputField": "/shipper/address/city",
+    "canonicalField": "/origin/city",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.231Z"
+  },
+  {
+    "inputField": "/shipper/address/countryCode",
+    "canonicalField": "/origin/countryCode",
+    "transformation": "direct|normalize:countryCode",
+    "acceptedAt": "2026-10-07T18:40:30.231Z"
+  },
+  {
+    "inputField": "/shipper/address/streetLines",
+    "canonicalField": "/origin/line1",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.232Z"
+  },
+  {
+    "inputField": "/shipper/address/postalCode",
+    "canonicalField": "/origin/postalCode",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.232Z"
+  },
+  {
+    "inputField": "/shipper/address/stateOrProvinceCode",
+    "canonicalField": "/origin/stateOrProvince",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-07T18:40:30.232Z"
+  }
+]
