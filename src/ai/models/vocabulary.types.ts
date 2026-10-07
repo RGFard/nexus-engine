@@ -24,3 +24,38 @@ export interface AcceptVocabularyResult {
   accepted: VocabularyEntry[];
   rejected: Array<{ inputField: string; canonicalField: string; reason: string }>;
 }
+
+/**
+ * Global learned vocabulary entry — same shape as VocabularyEntry, plus the
+ * transformation the AI chose so accepting it reproduces the AI result exactly.
+ */
+export interface LearnedVocabularyEntry extends VocabularyEntry {
+  transformation: string;
+  acceptedAt: string;
+}
+
+/** An AI-fallback mapping awaiting accept/reject. */
+export interface PendingVocabularyEntry {
+  /** Stable id derived from sourceField + targetField */
+  id: string;
+  sourceField: string;
+  targetField: string;
+  transformation: string;
+  confidence: number;
+  reasoning: string;
+  /** Context that produced it (most recent sighting) */
+  context: {
+    sourceSchemaId?: string;
+    targetSchemaId?: string;
+    clientId?: string;
+  };
+  firstSeenAt: string;
+  lastSeenAt: string;
+  seenCount: number;
+}
+
+/** Input to LearnedVocabularyStore.recordPending — store fills in id/timestamps. */
+export type PendingVocabularyInput = Omit<
+  PendingVocabularyEntry,
+  "id" | "firstSeenAt" | "lastSeenAt" | "seenCount"
+>;

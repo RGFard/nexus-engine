@@ -9,7 +9,7 @@
     "start": "node --env-file=.env dist/index.js",
     "dev": "tsx watch --env-file .env src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/semantic-matcher.test.ts tests/carrier-normalization.test.ts tests/normalize-flow.test.ts tests/fedex-array-transformation.test.ts tests/shipment-create-response.schema.test.ts tests/date-normalization.test.ts tests/custom-vocabulary.test.ts tests/required-field-gate.test.ts"
+    "test": "tsx --test tests/semantic-matcher.test.ts tests/carrier-normalization.test.ts tests/normalize-flow.test.ts tests/fedex-array-transformation.test.ts tests/shipment-create-response.schema.test.ts tests/date-normalization.test.ts tests/custom-vocabulary.test.ts tests/required-field-gate.test.ts tests/learned-vocabulary.test.ts"
   },
   "engines": {
     "node": ">=20"

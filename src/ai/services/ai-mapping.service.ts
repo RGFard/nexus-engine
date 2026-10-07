@@ -15,6 +15,8 @@ import { requiredFieldResolverService } from "./required-field-resolver.service.
 import { semanticMatcherService } from "./semantic-matcher.service.js";
 import type { CustomVocabularyStore } from "./custom-vocabulary.store.js";
 import { vocabularyStore as defaultVocabularyStore } from "./custom-vocabulary.store.js";
+import type { LearnedVocabularyStore } from "./learned-vocabulary.store.js";
+import { learnedVocabularyStore as defaultLearnedVocabularyStore } from "./learned-vocabulary.store.js";
 import type { SchemaFieldDescriptor } from "../models/schema-field.types.js";
 
 const log = aiLog("ai-mapping");
@@ -26,6 +28,7 @@ export class AiMappingService {
   constructor(
     private readonly config = loadAiConfig(),
     private readonly vocabStore: CustomVocabularyStore = defaultVocabularyStore,
+    private readonly learnedStore: LearnedVocabularyStore = defaultLearnedVocabularyStore,
   ) {
     if (this.config.anthropicApiKey) {
       this.anthropic = new Anthropic({ apiKey: this.config.anthropicApiKey });
@@ -68,9 +71,25 @@ export class AiMappingService {
     const candidates = semanticMatcherService.findCandidateMappings(sourceAnalysis, targetAnalysis);
     let mappings = this.candidatesToMappings(candidates, sourceAnalysis, targetAnalysis);
 
+    // ── Global learned vocabulary (accepted AI-fallback mappings) ─────────────
+    // Second lookup after the heuristic: a hit is applied at confidence 1.0 like
+    // any vocabulary match, so the field no longer counts as a gap that needs AI.
+    const learnedMappings = await this.loadLearnedMappings(
+      sourceAnalysis.fields,
+      targetAnalysis.fields,
+    );
+    if (learnedMappings.length > 0) {
+      mappings = applyVocabularyMappings(mappings, learnedMappings);
+      log.info(
+        { count: learnedMappings.length, fields: learnedMappings.map((m) => m.sourceField) },
+        "Global custom vocabulary mappings applied",
+      );
+    }
+
     // ── Custom vocabulary injection (priority tier above heuristic) ───────────
     // Learned mappings come in at confidence 1.0 and displace any heuristic match
     // for the same source or target field. Fields covered here never reach AI.
+    // Applied after the global list so a client's own vocabulary wins on conflict.
     const clientId = request.options?.clientId;
     if (clientId) {
       const vocabMappings = await this.loadVocabularyMappings(
@@ -105,6 +124,13 @@ export class AiMappingService {
       (noMappingsFound || belowThreshold || hasUnmappedRequired);
 
     let generationMode: "heuristic" | "hybrid" | "ai" = needsAi ? "hybrid" : "heuristic";
+
+    // source→target pairs that existed before AI ran (heuristic + vocabulary), and
+    // pairs the AI proposed. A final mapping is "from AI" only if it's in the second
+    // set and not the first — those are what get queued in pending_vocabulary.
+    const preAiKeys = new Set(mappings.map(mappingKey));
+    const aiKeys = new Set<string>();
+
 
     log.info(
       {
@@ -152,6 +178,7 @@ export class AiMappingService {
         );
         this.mappingCache.set(cacheKey, aiMappings);
       }
+      for (const m of aiMappings) aiKeys.add(mappingKey(m));
       mappings = mergeMappings(mappings, aiMappings);
       // Role-context guard must run BEFORE deduplication: remove cross-context AI mappings
       // before they can displace the correct heuristic mappings via deduplicateBySource.
@@ -175,6 +202,7 @@ export class AiMappingService {
           focusedTargetAnalysis,
           candidates,
         );
+        for (const m of secondAiMappings) aiKeys.add(mappingKey(m));
         mappings = mergeMappings(mappings, secondAiMappings);
         mappings = filterCrossContextMappings(mappings);
         mappings = deduplicateBySource(mappings);
@@ -228,6 +256,17 @@ export class AiMappingService {
     const { autoApplyThreshold } = this.config;
     const lowConfidenceMappings = mappings.filter((m) => m.confidence < autoApplyThreshold);
     mappings = mappings.filter((m) => m.confidence >= autoApplyThreshold);
+
+    if (aiKeys.size > 0) {
+      await this.recordPendingVocabulary(
+        [...mappings, ...lowConfidenceMappings],
+        preAiKeys,
+        aiKeys,
+        sourceAnalysis,
+        targetAnalysis.schemaId,
+        clientId,
+      );
+    }
 
     const mappedSources = new Set(mappings.map((m) => m.sourceField));
     const mappedTargetsFinal = new Set(mappings.map((m) => m.targetField));
@@ -379,6 +418,76 @@ export class AiMappingService {
   }
 
   // ── Vocabulary helpers ──────────────────────────────────────────────────────
+
+  /** Global learned vocabulary → FieldMappings. Matches on exact source path only. */
+  private async loadLearnedMappings(
+    sourceFields: SchemaFieldDescriptor[],
+    targetFields: SchemaFieldDescriptor[],
+  ): Promise<FieldMapping[]> {
+    let vocab;
+    try {
+      vocab = await this.learnedStore.loadCustom();
+    } catch (err) {
+      log.error({ err }, "Failed to load global custom vocabulary — continuing without it");
+      return [];
+    }
+    if (vocab.size === 0) return [];
+
+    const validTargetPaths = new Set(targetFields.map((f) => f.path));
+    const mappings: FieldMapping[] = [];
+    for (const sf of sourceFields) {
+      if (sf.kind === "object") continue;
+      const hit = vocab.get(sf.path);
+      if (!hit || !validTargetPaths.has(hit.canonicalField)) continue;
+      mappings.push({
+        sourceField: sf.path,
+        targetField: hit.canonicalField,
+        confidence: CUSTOM_VOCAB_CONFIDENCE,
+        transformation: hit.transformation,
+        reasoning: `Custom vocabulary (global): '${sf.path}' was accepted as '${hit.canonicalField}'.`,
+      });
+    }
+    return mappings;
+  }
+
+  /**
+   * Queue final mappings that originated from the AI fallback for accept/reject.
+   * Never fails the mapping request — a store error is logged and swallowed.
+   */
+  private async recordPendingVocabulary(
+    finalMappings: FieldMapping[],
+    preAiKeys: Set<string>,
+    aiKeys: Set<string>,
+    sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+    targetSchemaId: string | undefined,
+    clientId: string | undefined,
+  ): Promise<void> {
+    const sourcePaths = new Set(sourceAnalysis.fields.map((f) => f.path));
+    const fromAi = finalMappings.filter((m) => {
+      const key = mappingKey(m);
+      return aiKeys.has(key) && !preAiKeys.has(key) && sourcePaths.has(m.sourceField);
+    });
+    if (fromAi.length === 0) return;
+
+    try {
+      const recorded = await this.learnedStore.recordPending(
+        fromAi.map((m) => ({
+          sourceField: m.sourceField,
+          targetField: m.targetField,
+          transformation: m.transformation,
+          confidence: m.confidence,
+          reasoning: m.reasoning,
+          context: { sourceSchemaId: sourceAnalysis.schemaId, targetSchemaId, clientId },
+        })),
+      );
+      log.info(
+        { count: recorded.length, ids: recorded.map((e) => e.id) },
+        "AI fallback mappings queued in pending vocabulary",
+      );
+    } catch (err) {
+      log.error({ err }, "Failed to record pending vocabulary — mapping result unaffected");
+    }
+  }
 
   /** Load this client's vocabulary and translate it into FieldMapping objects. */
   private async loadVocabularyMappings(
@@ -862,6 +971,10 @@ function isAncestorChainRequired(
   }
 
   return true;
+}
+
+function mappingKey(m: Pick<FieldMapping, "sourceField" | "targetField">): string {
+  return `${m.sourceField}\u0000${m.targetField}`;
 }
 
 // ── Custom vocabulary confidence ──────────────────────────────────────────────

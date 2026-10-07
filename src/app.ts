@@ -8,6 +8,7 @@ import { schemaRefResolver } from "./ai/services/schema-ref-resolver.service.js"
 import { semanticMatcherService } from "./ai/services/semantic-matcher.service.js";
 import { CanonicalFieldsService } from "./ai/services/canonical-fields.service.js";
 import { vocabularyStore } from "./ai/services/custom-vocabulary.store.js";
+import { learnedVocabularyStore } from "./ai/services/learned-vocabulary.store.js";
 import { registerSchemaRoutes } from "./routes/schemas.routes.js";
 import { schemaRegistry } from "./services/schema-registry.service.js";
 import { SchemaValidationService } from "./services/schema-validation.service.js";
@@ -70,7 +71,11 @@ export async function buildApp(config: AppConfig) {
     transformationRegistry,
     schemaRegistry,
   });
-  await registerVocabularyRoutes(app, { vocabularyStore, canonicalFields });
+  await registerVocabularyRoutes(app, {
+    vocabularyStore,
+    canonicalFields,
+    learnedVocabularyStore,
+  });
 
   return app;
 }
