@@ -1,10 +1,12 @@
 /**
- * Best-guess label for which carrier/ERP format a source field path came from,
+ * Best-guess label for which carrier/ERP schema an incoming payload matches,
  * based on the naming conventions we've seen across the fixtures tested so far
- * (SAP/ERP, DHL, FedEx, UPS, ShipStation). There is no explicit "this is DHL"
- * signal anywhere in the request — the caller never tells us — so this is a
- * pattern match on the field path itself, not a fact. Good enough to group
- * pending/reconsider entries for review; not meant to drive any mapping logic.
+ * (SAP/ERP, DHL, FedEx, UPS, ShipStation). The caller never states a carrier,
+ * so this looks at every field path discovered in the payload (the same list
+ * already built for mapping) and checks it against each known schema's
+ * distinctive naming. One call per request, not per field: whichever system's
+ * pattern matches first (in priority order below) is the whole payload's
+ * answer.
  */
 
 interface SourceSystemPattern {
@@ -53,10 +55,12 @@ const PATTERNS: SourceSystemPattern[] = [
   },
 ];
 
-export function detectSourceSystem(sourceField: string): string | null {
+export function detectSourceSystem(fieldPaths: Iterable<string>): string | null {
   for (const pattern of PATTERNS) {
-    if (pattern.test(sourceField)) {
-      return pattern.system;
+    for (const path of fieldPaths) {
+      if (pattern.test(path)) {
+        return pattern.system;
+      }
     }
   }
   return null;

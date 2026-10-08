@@ -15,6 +15,7 @@ import {
   findExplicitMapping,
 } from "../utils/semantic-scoring.js";
 import { normalizeToken } from "../data/logistics-synonyms.js";
+import { detectSourceSystem } from "../utils/source-system.js";
 import { promptBuilderService } from "./prompt-builder.service.js";
 import { requiredFieldResolverService } from "./required-field-resolver.service.js";
 import { semanticMatcherService } from "./semantic-matcher.service.js";
@@ -529,6 +530,11 @@ export class AiMappingService {
     });
     if (fromAi.length === 0) return;
 
+    // One check per request, against the whole payload's field paths — not per field.
+    // Whichever known carrier/ERP schema this payload matches (if any) applies to
+    // every AI-fallback field recorded from it.
+    const detectedSourceSystem = detectSourceSystem(sourcePaths);
+
     try {
       const recorded = await this.learnedStore.recordPending(
         fromAi.map((m) => ({
@@ -538,6 +544,7 @@ export class AiMappingService {
           confidence: m.confidence,
           reasoning: m.reasoning,
           context: { sourceSchemaId: sourceAnalysis.schemaId, targetSchemaId, clientId },
+          detectedSourceSystem,
         })),
       );
       log.info(

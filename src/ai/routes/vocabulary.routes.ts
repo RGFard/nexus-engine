@@ -39,7 +39,7 @@ const pendingEntrySchema = {
     seenCount: { type: "integer" },
     sourceSystem: {
       type: ["string", "null"],
-      description: "Best-guess carrier/ERP format this field came from (DHL, FedEx, UPS, SAP/ERP, ShipStation), or null if unrecognized. A pattern match on the field path, not a fact supplied by the caller.",
+      description: "Every known carrier/ERP schema (DHL, FedEx, UPS, SAP/ERP, ShipStation) a request containing this field has matched, comma-separated across sightings (e.g. \"DHL,UPS\"), or null if none matched. Detected from each request's whole payload, not supplied by the caller.",
     },
   },
 } as const;

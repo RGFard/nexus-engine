@@ -53,21 +53,27 @@ export interface PendingVocabularyEntry {
   lastSeenAt: string;
   seenCount: number;
   /**
-   * Best-guess carrier/ERP format this field path came from (DHL, FedEx, UPS,
-   * SAP/ERP, ShipStation), or null if nothing matched. There's no explicit
-   * signal for this anywhere in the request — it's a pattern match on the
-   * field path itself (see utils/source-system.ts), computed once when the
-   * entry is first seen. Good enough to group entries for review; not used
-   * in any mapping decision.
+   * Every known carrier/ERP schema (DHL, FedEx, UPS, SAP/ERP, ShipStation) a
+   * payload containing this field has matched, comma-separated and built up
+   * across sightings — e.g. seen once from a DHL payload and later from a UPS
+   * one becomes "DHL,UPS". null if no sighting's payload matched a known
+   * schema. Each sighting's match comes from utils/source-system.ts, which
+   * looks at that request's whole payload, not just this one field.
    */
   sourceSystem: string | null;
 }
 
-/** Input to LearnedVocabularyStore.recordPending — store fills in id/timestamps/sourceSystem. */
+/**
+ * Input to LearnedVocabularyStore.recordPending — store fills in id/timestamps,
+ * and merges detectedSourceSystem into the entry's accumulated sourceSystem list.
+ */
 export type PendingVocabularyInput = Omit<
   PendingVocabularyEntry,
   "id" | "firstSeenAt" | "lastSeenAt" | "seenCount" | "sourceSystem"
->;
+> & {
+  /** Which known schema THIS sighting's whole payload matched, or null if none did. */
+  detectedSourceSystem: string | null;
+};
 
 /**
  * A pending mapping that was rejected rather than accepted — kept, not dropped,

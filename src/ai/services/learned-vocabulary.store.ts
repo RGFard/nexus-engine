@@ -20,7 +20,6 @@ import type {
   ReconsiderVocabularyEntry,
   ReconsiderVocabularyEntryWithSelection,
 } from "../models/vocabulary.types.js";
-import { detectSourceSystem } from "../utils/source-system.js";
 
 export interface LearnedVocabularyStore {
   /** Upsert AI-fallback mappings into pending. Re-sightings bump seenCount/lastSeenAt. */
@@ -46,6 +45,13 @@ export interface LearnedVocabularyStore {
 
 export function pendingId(sourceField: string, targetField: string): string {
   return createHash("sha256").update(`${sourceField}\u0000${targetField}`).digest("hex").slice(0, 12);
+}
+
+/** Merge a new sighting's detected schema into the accumulated comma list, deduped and sorted. */
+function mergeSourceSystem(existing: string | null, detected: string | null): string | null {
+  const systems = new Set(existing ? existing.split(",") : []);
+  if (detected) systems.add(detected);
+  return systems.size > 0 ? [...systems].sort().join(",") : null;
 }
 
 interface State {
@@ -81,13 +87,15 @@ abstract class BaseLearnedVocabularyStore implements LearnedVocabularyStore {
     return this.mutate((state) => {
       const now = new Date().toISOString();
       return entries.map((e) => {
+        const { detectedSourceSystem, ...fields } = e;
         const id = pendingId(e.sourceField, e.targetField);
         const existing = state.pending.get(id);
-        // sourceSystem is a guess from the field path, stable per field name —
-        // computed once on first sighting and kept as-is on re-sightings.
+        // Every sighting's whole-payload match gets folded into the running list —
+        // the same field seen from a DHL payload and later a UPS one ends up "DHL,UPS".
+        const sourceSystem = mergeSourceSystem(existing?.sourceSystem ?? null, detectedSourceSystem);
         const next: PendingVocabularyEntry = existing
-          ? { ...existing, ...e, id, lastSeenAt: now, seenCount: existing.seenCount + 1 }
-          : { ...e, id, firstSeenAt: now, lastSeenAt: now, seenCount: 1, sourceSystem: detectSourceSystem(e.sourceField) };
+          ? { ...existing, ...fields, id, lastSeenAt: now, seenCount: existing.seenCount + 1, sourceSystem }
+          : { ...fields, id, firstSeenAt: now, lastSeenAt: now, seenCount: 1, sourceSystem };
         state.pending.set(id, next);
         return next;
       });
