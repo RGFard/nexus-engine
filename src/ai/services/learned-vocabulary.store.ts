@@ -17,7 +17,10 @@ import type {
   LearnedVocabularyEntry,
   PendingVocabularyEntry,
   PendingVocabularyInput,
+  ReconsiderVocabularyEntry,
+  ReconsiderVocabularyEntryWithSelection,
 } from "../models/vocabulary.types.js";
+import { detectSourceSystem } from "../utils/source-system.js";
 
 export interface LearnedVocabularyStore {
   /** Upsert AI-fallback mappings into pending. Re-sightings bump seenCount/lastSeenAt. */
@@ -25,10 +28,20 @@ export interface LearnedVocabularyStore {
   listPending(): Promise<PendingVocabularyEntry[]>;
   /** Move a pending entry into custom vocabulary. Returns null if id is unknown. */
   acceptPending(id: string): Promise<LearnedVocabularyEntry | null>;
-  /** Drop a pending entry. Returns false if id is unknown. */
-  rejectPending(id: string): Promise<boolean>;
+  /**
+   * Move a pending entry into the reconsider list instead of dropping it, so a
+   * deliberate "not this, for now" decision is kept for a future look. Returns
+   * null if id is unknown.
+   */
+  rejectPending(id: string, reason?: string): Promise<ReconsiderVocabularyEntry | null>;
   /** Global custom vocabulary, keyed by inputField (source path). */
   loadCustom(): Promise<Map<string, LearnedVocabularyEntry>>;
+  /**
+   * Rejected mappings held for future reconsideration, most recent first, each
+   * enriched with what the global vocabulary currently maps that source field
+   * to (null if nothing does).
+   */
+  listReconsider(): Promise<ReconsiderVocabularyEntryWithSelection[]>;
 }
 
 export function pendingId(sourceField: string, targetField: string): string {
@@ -38,6 +51,7 @@ export function pendingId(sourceField: string, targetField: string): string {
 interface State {
   pending: Map<string, PendingVocabularyEntry>;
   custom: Map<string, LearnedVocabularyEntry>;
+  reconsider: Map<string, ReconsiderVocabularyEntry>;
 }
 
 /**
@@ -69,9 +83,11 @@ abstract class BaseLearnedVocabularyStore implements LearnedVocabularyStore {
       return entries.map((e) => {
         const id = pendingId(e.sourceField, e.targetField);
         const existing = state.pending.get(id);
+        // sourceSystem is a guess from the field path, stable per field name —
+        // computed once on first sighting and kept as-is on re-sightings.
         const next: PendingVocabularyEntry = existing
           ? { ...existing, ...e, id, lastSeenAt: now, seenCount: existing.seenCount + 1 }
-          : { ...e, id, firstSeenAt: now, lastSeenAt: now, seenCount: 1 };
+          : { ...e, id, firstSeenAt: now, lastSeenAt: now, seenCount: 1, sourceSystem: detectSourceSystem(e.sourceField) };
         state.pending.set(id, next);
         return next;
       });
@@ -100,22 +116,48 @@ abstract class BaseLearnedVocabularyStore implements LearnedVocabularyStore {
     });
   }
 
-  rejectPending(id: string): Promise<boolean> {
-    return this.mutate((state) => state.pending.delete(id));
+  rejectPending(id: string, reason?: string): Promise<ReconsiderVocabularyEntry | null> {
+    return this.mutate((state) => {
+      const p = state.pending.get(id);
+      if (!p) return null;
+      const entry: ReconsiderVocabularyEntry = {
+        ...p,
+        reason: reason?.trim() || "No reason given",
+        rejectedAt: new Date().toISOString(),
+      };
+      state.reconsider.set(id, entry);
+      state.pending.delete(id);
+      return entry;
+    });
   }
 
   async loadCustom(): Promise<Map<string, LearnedVocabularyEntry>> {
     await this.queue;
     return new Map((await this.read()).custom);
   }
+
+  async listReconsider(): Promise<ReconsiderVocabularyEntryWithSelection[]> {
+    await this.queue;
+    const { reconsider, custom } = await this.read();
+    return [...reconsider.values()]
+      .sort((a, b) => b.rejectedAt.localeCompare(a.rejectedAt))
+      .map((entry) => ({
+        ...entry,
+        selectedTarget: custom.get(entry.sourceField)?.canonicalField ?? null,
+      }));
+  }
 }
 
 /** In-memory store — used in tests and when LEARNED_VOCAB_DIR is unset. */
 export class InMemoryLearnedVocabularyStore extends BaseLearnedVocabularyStore {
-  private state: State = { pending: new Map(), custom: new Map() };
+  private state: State = { pending: new Map(), custom: new Map(), reconsider: new Map() };
 
   protected async read(): Promise<State> {
-    return { pending: new Map(this.state.pending), custom: new Map(this.state.custom) };
+    return {
+      pending: new Map(this.state.pending),
+      custom: new Map(this.state.custom),
+      reconsider: new Map(this.state.reconsider),
+    };
   }
 
   protected async write(state: State): Promise<void> {
@@ -129,7 +171,7 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
     super();
   }
 
-  private file(name: "pending_vocabulary" | "custom_vocabulary"): string {
+  private file(name: "pending_vocabulary" | "custom_vocabulary" | "reconsider_vocabulary"): string {
     return path.join(this.baseDir, `${name}.json`);
   }
 
@@ -152,9 +194,11 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
   protected async read(): Promise<State> {
     const pending = await this.readArray<PendingVocabularyEntry>(this.file("pending_vocabulary"));
     const custom = await this.readArray<LearnedVocabularyEntry>(this.file("custom_vocabulary"));
+    const reconsider = await this.readArray<ReconsiderVocabularyEntry>(this.file("reconsider_vocabulary"));
     return {
       pending: new Map(pending.map((e) => [e.id, e])),
       custom: new Map(custom.map((e) => [e.inputField, e])),
+      reconsider: new Map(reconsider.map((e) => [e.id, e])),
     };
   }
 
@@ -162,6 +206,7 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
     await fs.mkdir(this.baseDir, { recursive: true });
     await this.writeArray(this.file("pending_vocabulary"), [...state.pending.values()]);
     await this.writeArray(this.file("custom_vocabulary"), [...state.custom.values()]);
+    await this.writeArray(this.file("reconsider_vocabulary"), [...state.reconsider.values()]);
   }
 }
 

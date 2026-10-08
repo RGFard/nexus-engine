@@ -1,0 +1,146 @@
+[
+  {
+    "id": "16530ae2c516",
+    "sourceField": "/orderNumber",
+    "targetField": "/identifiers/externalId",
+    "transformation": "direct",
+    "confidence": 0.88,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 1,
+    "reason": "Lost to /identifiers/clientReferenceId (seen 6x vs 1x).",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/identifiers/clientReferenceId",
+    "sourceSystem": "ShipStation"
+  },
+  {
+    "id": "054a6df528a6",
+    "sourceField": "/advancedOptions/source",
+    "targetField": "/metadata/sourceEnvironment",
+    "transformation": "direct",
+    "confidence": 0.7,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 3,
+    "reason": "Lost to /metadata/sourceSystem (seen 4x vs 3x) — closest call of the batch, worth a second look.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/metadata/sourceSystem",
+    "sourceSystem": "ShipStation"
+  },
+  {
+    "id": "3ad7eb3506fa",
+    "sourceField": "/InternationalDetail/Commodities/CustomsValue",
+    "targetField": "/packages[]/declaredValue/amount",
+    "transformation": "direct",
+    "confidence": 0.85,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 2,
+    "reason": "Lost to /customs/declaredValue/amount (seen 7x vs 2x). Package-level declared value is already covered by /DeclaredValue, but this field may need to feed both targets, same shape as the quantity sibling-mapping bug — recheck if a DHL international payload fails validation on a missing packages[].declaredValue.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/customs/declaredValue/amount",
+    "sourceSystem": "DHL"
+  },
+  {
+    "id": "eff2752dd39a",
+    "sourceField": "/DeclaredValueCurrecyCode",
+    "targetField": "/packages[]/declaredValue/currency",
+    "transformation": "direct",
+    "confidence": 0.85,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 4,
+    "reason": "Lost to /customs/declaredValue/currency (seen 5x vs 4x). Same possible dual-target caveat as the CustomsValue entry above.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/customs/declaredValue/currency",
+    "sourceSystem": "DHL"
+  },
+  {
+    "id": "3fd2f263b92a",
+    "sourceField": "/Packages/RequestedPackages[]/CustomerReferences",
+    "targetField": "/packages[]/packageId",
+    "transformation": "direct",
+    "confidence": 0.75,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 3,
+    "reason": "Lost to /identifiers/clientReferenceId (seen 6x vs 3x).",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/identifiers/clientReferenceId",
+    "sourceSystem": "DHL"
+  },
+  {
+    "id": "0686f50ac546",
+    "sourceField": "/NAME1_E",
+    "targetField": "/destination/name",
+    "transformation": "direct",
+    "confidence": 0.95,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 1,
+    "reason": "Lost to /destination/company (seen 4x vs 1x). SAP's NAME1 is conventionally the business partner's primary name, usually the company — confirm against real SAP data.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/destination/company",
+    "sourceSystem": "SAP/ERP"
+  },
+  {
+    "id": "b35c73c3b2bd",
+    "sourceField": "/NAME1_S",
+    "targetField": "/origin/name",
+    "transformation": "direct",
+    "confidence": 0.95,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 1,
+    "reason": "Lost to /origin/company (seen 4x vs 1x). Same SAP NAME1 convention call as NAME1_E.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": "/origin/company",
+    "sourceSystem": "SAP/ERP"
+  },
+  {
+    "id": "541dce07bbd8",
+    "sourceField": "/items[]/unitPrice",
+    "targetField": "/packages[]/declaredValue/amount",
+    "transformation": "direct",
+    "confidence": 0.78,
+    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "firstSeenAt": "2026-10-08T00:00:00.000Z",
+    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "seenCount": 1,
+    "reason": "Rejected outright, not a conflict — a line item's unit price isn't the same thing as a package's declared value.",
+    "rejectedAt": "2026-10-08T00:00:00.000Z",
+    "selectedTarget": null,
+    "sourceSystem": null
+  }
+]

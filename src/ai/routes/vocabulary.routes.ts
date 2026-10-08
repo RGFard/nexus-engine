@@ -37,6 +37,10 @@ const pendingEntrySchema = {
     firstSeenAt: { type: "string" },
     lastSeenAt: { type: "string" },
     seenCount: { type: "integer" },
+    sourceSystem: {
+      type: ["string", "null"],
+      description: "Best-guess carrier/ERP format this field came from (DHL, FedEx, UPS, SAP/ERP, ShipStation), or null if unrecognized. A pattern match on the field path, not a fact supplied by the caller.",
+    },
   },
 } as const;
 
@@ -47,6 +51,19 @@ const learnedEntrySchema = {
     canonicalField: { type: "string" },
     transformation: { type: "string" },
     acceptedAt: { type: "string" },
+  },
+} as const;
+
+const reconsiderEntrySchema = {
+  type: "object",
+  properties: {
+    ...pendingEntrySchema.properties,
+    reason: { type: "string" },
+    rejectedAt: { type: "string" },
+    selectedTarget: {
+      type: ["string", "null"],
+      description: "What the global vocabulary currently maps this source field to instead, or null if nothing does.",
+    },
   },
 } as const;
 
@@ -262,14 +279,21 @@ export async function registerVocabularyRoutes(
     },
   );
 
-  app.post<{ Params: { id: string } }>(
+  app.post<{ Params: { id: string }; Body: { reason?: string } }>(
     "/vocabulary/pending/:id/reject",
     {
       schema: {
         tags: ["vocabulary"],
-        summary: "Reject (drop) a pending mapping (internal)",
+        summary: "Reject a pending mapping into the reconsider list (internal)",
+        description:
+          "Moves the entry to the reconsider list instead of dropping it, so a deliberate " +
+          "'not this, for now' decision is kept for a future look (GET /vocabulary/reconsider). " +
+          "An optional 'reason' in the body is stored with it.",
         headers: secretHeaders,
         params: { type: "object", required: ["id"], properties: { id: { type: "string" } } },
+        // No body schema: fastify/ajv rejects a request sent with no body at all against a
+        // required `type: "object"` body schema, and reason is optional anyway — read it
+        // loosely in the handler instead of declaring (and enforcing) a body shape here.
         response: {
           200: { type: "object", properties: { rejected: { type: "string" } } },
           401: errorSchema,
@@ -279,12 +303,39 @@ export async function registerVocabularyRoutes(
     },
     async (request, reply) => {
       if (!authorize(request, reply)) return reply;
-      const removed = await deps.learnedVocabularyStore.rejectPending(request.params.id);
+      const reason = (request.body as { reason?: string } | undefined)?.reason;
+      const removed = await deps.learnedVocabularyStore.rejectPending(request.params.id, reason);
       if (!removed) {
         return reply.status(404).send({ error: `Pending entry '${request.params.id}' not found` });
       }
-      log.info({ id: request.params.id }, "Pending vocabulary rejected");
+      log.info({ id: request.params.id, reason: removed.reason }, "Pending vocabulary rejected to reconsider list");
       return { rejected: request.params.id };
+    },
+  );
+
+  app.get(
+    "/vocabulary/reconsider",
+    {
+      schema: {
+        tags: ["vocabulary"],
+        summary: "List rejected mappings held for future reconsideration (internal)",
+        description:
+          "Entries rejected from the pending queue land here instead of vanishing, so a deliberate " +
+          "'not this, for now' call stays visible instead of silently being re-proposed from scratch.",
+        headers: secretHeaders,
+        response: {
+          200: {
+            type: "object",
+            properties: { reconsider: { type: "array", items: reconsiderEntrySchema } },
+          },
+          401: errorSchema,
+          404: errorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!authorize(request, reply)) return reply;
+      return { reconsider: await deps.learnedVocabularyStore.listReconsider() };
     },
   );
 }
