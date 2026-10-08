@@ -268,11 +268,12 @@ export class AiMappingService {
     // any such target that isn't already mapped. See PARCEL_UNIT_CONVENTIONS below.
     mappings = injectParcelUnitDefaults(mappings);
 
-    // Customs line items: the per-commodity description sibling doesn't survive
-    // deduplicateBySource when the same source field also feeds /customs/contentsDescription,
-    // and some carriers (e.g. DHL) declare currency once at the shipment level rather than
-    // per line item. Both are synthesized here, after dedup, so they aren't clobbered by it.
-    mappings = synthesizeLineItemDescription(mappings, sourceAnalysis);
+    // Customs line items: the per-commodity description and quantity siblings don't survive
+    // deduplicateBySource when the same source also feeds /customs/contentsDescription or
+    // /packages[]/quantity, and some carriers (e.g. DHL) declare currency once at the
+    // shipment level rather than per line item. All are synthesized here, after dedup, so
+    // they aren't clobbered by it.
+    mappings = synthesizeLineItemSiblings(mappings, sourceAnalysis);
     mappings = injectLineItemCurrencyDefault(mappings, sourceAnalysis);
 
     // /customs/contentsType has a fixed canonical enum; force the normalization step
@@ -296,6 +297,14 @@ export class AiMappingService {
     // dateTime, /timeWindowStart, /timeWindowEnd, and the response schema's top-level
     // /createdAt have the identical exposure with zero coverage.
     mappings = enforceDateFormatTransformation(mappings, targetByPath);
+
+    // Any target whose schema allows exactly one non-null scalar type must receive a
+    // value of that type. Same rationale as the date-format enforcement just above: the
+    // AI's own reasoning/transformation choice is not a reliable signal — seen both as
+    // /shipments[]/shipmentId -> /identifiers/shipmentId landing as a bare number (string
+    // target, "direct" with no cast) and as EasyPost's /parcel/height|length|width landing
+    // as bare strings on /packages[]/dimensions/* (number target, same gap, opposite type).
+    mappings = enforceScalarCastTransformation(mappings, targetByPath);
 
     // Partition by autoApplyThreshold: candidates strictly below go to review, not auto-apply
     const { autoApplyThreshold } = this.config;
@@ -868,40 +877,78 @@ function injectParcelUnitDefaults(mappings: FieldMapping[]): FieldMapping[] {
 //     target per source field, so the line-item description silently drops.
 //  2. Some carriers (DHL) declare currency once at the shipment level, not per line
 //     item, so there is no direct source field for /customs/lineItems[]/unitValue/currency.
+//
+// Gap 1 applies equally to quantity: the commodity quantity also legitimately feeds
+// /packages[]/quantity, and which of the two survives deduplicateBySource depends on
+// relative heuristic/AI confidence — so it flipped between runs on the same DHL payload.
+// Both required siblings are re-attached here, after dedup, from the commodity parent
+// of whichever customs line item fields did map.
 
-function synthesizeLineItemDescription(
+interface LineItemSibling {
+  targetField: string;
+  /** Accepted source leaf names (normalizeToken form) */
+  names: string[];
+  transformation: string;
+  /** Other target the same source legitimately feeds (for the reasoning string) */
+  alsoFeeds: string;
+}
+
+const LINE_ITEM_SIBLINGS: LineItemSibling[] = [
+  {
+    targetField: "/customs/lineItems[]/description",
+    names: ["description"],
+    transformation: "direct",
+    alsoFeeds: "/customs/contentsDescription",
+  },
+  {
+    targetField: "/customs/lineItems[]/quantity",
+    names: ["quantity", "qty"],
+    // Line item quantity is schema type integer; carriers sometimes send it as a string.
+    transformation: "cast:number",
+    alsoFeeds: "/packages[]/quantity",
+  },
+];
+
+function synthesizeLineItemSiblings(
   mappings: FieldMapping[],
   sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
 ): FieldMapping[] {
-  const alreadyMapped = mappings.some((m) => m.targetField === "/customs/lineItems[]/description");
-  if (alreadyMapped) return mappings;
+  const additions: FieldMapping[] = [];
 
-  const lineItemMapping = mappings.find(
-    (m) => m.targetField.startsWith("/customs/lineItems[]/") && m.targetField !== "/customs/lineItems[]/description",
-  );
-  if (!lineItemMapping) return mappings;
+  for (const sibling of LINE_ITEM_SIBLINGS) {
+    if (mappings.some((m) => m.targetField === sibling.targetField)) continue;
 
-  const parentPath = lineItemMapping.sourceField.replace(/\/[^/]+$/, "");
-  const descriptionField = sourceAnalysis.fields.find(
-    (f) => f.parentPath === parentPath && f.name.toLowerCase() === "description",
-  );
-  if (!descriptionField) return mappings;
+    // Commodity parents: source parents of every other mapped customs line item field.
+    const parentPaths = new Set(
+      mappings
+        .filter((m) => m.targetField.startsWith("/customs/lineItems[]/") && m.targetField !== sibling.targetField)
+        .map((m) => m.sourceField.replace(/\/[^/]+$/, "")),
+    );
+    if (parentPaths.size === 0) continue;
 
-  log.info(
-    { sourceField: descriptionField.path, targetField: "/customs/lineItems[]/description" },
-    "Synthesized customs line item description mapping",
-  );
+    const field = sourceAnalysis.fields.find(
+      (f) =>
+        f.kind !== "object" &&
+        f.parentPath !== undefined &&
+        parentPaths.has(f.parentPath) &&
+        sibling.names.includes(normalizeToken(f.name)),
+    );
+    if (!field) continue;
 
-  return [
-    ...mappings,
-    {
-      sourceField: descriptionField.path,
-      targetField: "/customs/lineItems[]/description",
+    log.info(
+      { sourceField: field.path, targetField: sibling.targetField },
+      "Synthesized customs line item sibling mapping",
+    );
+    additions.push({
+      sourceField: field.path,
+      targetField: sibling.targetField,
       confidence: 0.85,
-      transformation: "direct",
-      reasoning: `${descriptionField.path} is the per-commodity description sibling of the already-mapped customs line item fields; it also feeds /customs/contentsDescription, but deduplication only keeps one target per source field.`,
-    },
-  ];
+      transformation: sibling.transformation,
+      reasoning: `${field.path} is the per-commodity sibling of the already-mapped customs line item fields; it also feeds ${sibling.alsoFeeds}, but deduplication only keeps one target per source field.`,
+    });
+  }
+
+  return additions.length > 0 ? [...mappings, ...additions] : mappings;
 }
 
 const LINE_ITEM_CURRENCY_PATTERNS: RegExp[] = [
@@ -1009,6 +1056,60 @@ function enforceDateFormatTransformation(
   });
 }
 
+/**
+ * Any target field whose schema allows exactly one non-null scalar type must end up as
+ * a value of that type. Read directly off the target schema's resolved `types` (same
+ * source enforceDateFormatTransformation reads `format` from), not inferred from the
+ * mapping's own reasoning text or whichever transformation step the heuristic/AI happened
+ * to pick. Neither is a reliable signal:
+ *   - /shipments[]/shipmentId -> /identifiers/shipmentId (string target) was proposed as
+ *     "direct" with reasoning "already string in target," but the source was numeric.
+ *   - EasyPost's /parcel/height|length|width -> /packages[]/dimensions/* (number target)
+ *     were proposed as "direct" with no cast at all, but EasyPost sends them as strings.
+ * Same gap, opposite type — hence one scalar-type-driven function instead of two
+ * single-type ones. Each cast step is a no-op when the value already has the target
+ * type (String(x) on a string, Number(x) on a number, the boolean branch of cast:boolean
+ * on a boolean) and passes null/undefined through unchanged, so applying it
+ * unconditionally is safe rather than only when some pattern suggests a mismatch.
+ * Date/date-time targets are excluded since enforceDateFormatTransformation above
+ * already forces the correct step for those (also string-typed, but date:iso8601/
+ * date:date already produce a string; this would just be a redundant no-op on top).
+ */
+const SCALAR_CAST_STEP_BY_TYPE: Record<string, string> = {
+  string: "cast:string",
+  number: "cast:number",
+  integer: "cast:number",
+  boolean: "cast:boolean",
+};
+
+// Steps that already satisfy a given cast, so enforcement is a no-op.
+const SCALAR_CAST_SATISFIED_BY: Record<string, string[]> = {
+  "cast:string": ["cast:string", "toString"],
+  "cast:number": ["cast:number"],
+  "cast:boolean": ["cast:boolean"],
+};
+
+function enforceScalarCastTransformation(
+  mappings: FieldMapping[],
+  targetByPath: Map<string, SchemaFieldDescriptor>,
+): FieldMapping[] {
+  return mappings.map((m) => {
+    const target = targetByPath.get(m.targetField);
+    if (!target || target.types.length !== 1) return m;
+
+    const castStep = SCALAR_CAST_STEP_BY_TYPE[target.types[0]];
+    if (!castStep) return m;
+
+    const format = target.metadata?.format;
+    if (format === "date" || format === "date-time") return m;
+
+    const steps = m.transformation.split("|").map((s) => s.trim());
+    if (SCALAR_CAST_SATISFIED_BY[castStep].some((s) => steps.includes(s))) return m;
+
+    return { ...m, transformation: `${m.transformation}|${castStep}` };
+  });
+}
+
 // ── Plausible-unmapped-field gate (hasUnmappedPlausibleFields) ───────────────
 //
 // Catches address/contact/identifier-shaped source fields left unmapped after
@@ -1033,6 +1134,15 @@ const PLAUSIBLE_FIELD_NAME_STEMS = [
   // normalizeToken strips the field's underscore separator (REGIO_E -> "regioe"),
   // which does not contain the substring "region".
   "pstlz", "telf", "regio",
+  // Tracking-number backstop: a concept-only semantic match (see
+  // semantic-scoring.ts's tracking_number floor) usually clears the heuristic now, but
+  // this gate still needs its own signal so a tracking-shaped field that the heuristic
+  // genuinely misses doesn't silently vanish instead of triggering AI. "tracking" alone
+  // covers trackingNumber/masterTrackingNumber/shipmentTrackingNumber; UPS's
+  // ShipmentIdentificationNumber needs its own stem since it contains neither
+  // "tracking" nor "waybill". Not "pro" (pronumber) — too short, false-positives on
+  // "province"/"product"/"process".
+  "tracking", "waybill", "trackid", "shipmentidentification",
 ];
 
 function looksLikePostalCode(value: string): boolean {

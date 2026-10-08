@@ -1,0 +1,67 @@
+{
+  "ShipmentCreationDate": "2026-10-07T10:00:00Z",
+  "DeclaredValueCurrecyCode": "USD",
+  "ShipmentInfo": {
+    "Account": "123456789",
+    "ServiceType": "P"
+  },
+  "Shipper": {
+    "Contact": {
+      "PersonName": "Anna Schmidt",
+      "CompanyName": "Export GmbH",
+      "PhoneNumber": "+49 30 1234567",
+      "EmailAddress": "anna@export.de"
+    },
+    "Address": {
+      "StreetLines": "Hauptstrasse 5",
+      "City": "Berlin",
+      "PostalCode": "10115",
+      "CountryCode": "DE"
+    }
+  },
+  "Recipient": {
+    "Contact": {
+      "PersonName": "John Doe",
+      "CompanyName": "Import Inc",
+      "PhoneNumber": "+1 212 555 0100",
+      "EmailAddress": "john@import.com"
+    },
+    "Address": {
+      "StreetLines": "456 Customer Ave",
+      "City": "New York",
+      "PostalCode": "10001",
+      "CountryCode": "US"
+    }
+  },
+  "Packages": {
+    "RequestedPackages": [
+      {
+        "Weight": {
+          "Value": 2.5,
+          "Unit": "KG"
+        },
+        "Dimensions": {
+          "Length": 30,
+          "Width": 20,
+          "Height": 15,
+          "Unit": "CM"
+        },
+        "CustomerReferences": "REF-001"
+      }
+    ]
+  },
+  "InternationalDetail": {
+    "Content": "NON_DOCUMENTS",
+    "ExportDeclaration": {
+      "InvoiceTotal": 150
+    },
+    "Commodities": {
+      "Description": "Cotton T-shirts",
+      "Quantity": 10,
+      "UnitPrice": 15,
+      "CustomsValue": 150,
+      "HarmonizedCode": "610910",
+      "CountryOfManufacture": "DE"
+    }
+  }
+}

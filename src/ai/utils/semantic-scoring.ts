@@ -252,6 +252,45 @@ export function computeSemanticSimilarity(
     }
   }
 
+  // A curated semantic-concept match (tracking_number, shipment_id, etc.) is reliable
+  // evidence on its own, but concept-only fields like tracking numbers usually sit at
+  // the payload root in both source and target — no shared parent to earn the
+  // parentContext bonus, and no name-token overlap (ShipmentIdentificationNumber vs
+  // trackingNumber) to earn name credit either. The weighted blend then caps near 0.35
+  // (semantic's 0.38 weight on a 0.92 concept score), under MIN_PAIR_SCORE, so the pair
+  // is dropped before the accept-score logic (which already special-cases
+  // semantic_concept reasons down to 0.45) or AI ever sees it. Floor it near
+  // HIGH_SEMANTIC_ACCEPT instead of raising the semantic weight globally, which would
+  // also inflate the weaker partial-concept match just below (`semantic = partial * 0.4`)
+  // that isn't meant to qualify on its own.
+  //
+  // For a concept flagged preferPrimaryCanonicalPath, the first canonicalPaths entry is
+  // the single recommended location for that value (e.g. tracking_number's own schema
+  // declares /trackingNumber as x-canonical-recommended) — give it 0.92, just above the
+  // exact-name-match floor (0.9) above, so it deterministically wins the tie-break even
+  // against a source field whose literal name happens to match a *secondary* alias
+  // (masterTrackingNumber the source name vs /identifiers/masterTrackingNumber the
+  // target path) instead of the recommended one. Every other concept — including ones
+  // whose canonicalPaths are a GROUP of distinct fields rather than aliases, like
+  // carrier_code's carrierCode/carrierName — is unaffected and keeps the flat floor.
+  // Only floor when parentContext earned nothing: fields like origin_line1/origin_country
+  // already get a real parentContext bonus (shipFrom/origin both resolve to the "origin"
+  // context) plus partial name credit, and that nuanced, sub-0.60 score is what correctly
+  // keeps an ambiguous address field (e.g. shipFrom.country vs a competing billTo/shipTo
+  // group) out of the auto-applied set pending review. Gating on parentContext === 0
+  // confines the floor to the root-level, no-shared-parent case the comment above
+  // describes (tracking_number, shipment_id, etc.) without re-inflating concepts that
+  // were already scored deliberately low for a reason.
+  if (sourceConcept && targetConcept && sourceConcept === targetConcept && parentContext === 0) {
+    const concept = LOGISTICS_CONCEPTS.find((c) => c.id === sourceConcept);
+    const stripArraysLower = (p: string) => p.replace(/\[\]/g, "").toLowerCase();
+    const isPrimaryCanonicalPath =
+      concept?.preferPrimaryCanonicalPath === true &&
+      concept.canonicalPaths.length > 0 &&
+      stripArraysLower(target.path) === stripArraysLower(concept.canonicalPaths[0]);
+    total = Math.max(total, isPrimaryCanonicalPath ? 0.92 : 0.75);
+  }
+
   return {
     name,
     semantic,

@@ -14,6 +14,18 @@ export interface LogisticsConcept {
   canonicalPaths: string[];
   /** Parent context hints (origin, destination, package, carrier, etc.) */
   contexts?: string[];
+  /**
+   * True only when every entry in canonicalPaths is a true alias for the same single
+   * value (e.g. tracking_number's /trackingNumber vs /identifiers/masterTrackingNumber
+   * are the same tracking number, just two schema locations for it). When true,
+   * computeSemanticSimilarity gives canonicalPaths[0] a tie-break edge over every other
+   * target for that concept, including an exact-name match elsewhere. Leave unset (the
+   * default) for concepts whose canonicalPaths are a GROUP of distinct fields rather
+   * than aliases of one value — e.g. carrier_code's /carrier/carrierCode vs
+   * /carrier/carrierName are different pieces of data, so boosting index 0 there would
+   * misroute a source field actually named "carrierName" into "carrierCode".
+   */
+  preferPrimaryCanonicalPath?: boolean;
 }
 
 /** Normalize for synonym lookup */
@@ -47,6 +59,9 @@ export const LOGISTICS_CONCEPTS: LogisticsConcept[] = [
     ],
     canonicalPaths: ["/trackingNumber", "/identifiers/masterTrackingNumber", "/trackingNumbers"],
     contexts: ["shipment", "tracking"],
+    // All three paths are the same tracking value in different schema locations —
+    // /trackingNumber is the response schema's own x-canonical-recommended field.
+    preferPrimaryCanonicalPath: true,
   },
   {
     id: "shipment_id",
