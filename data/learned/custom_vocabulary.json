@@ -94,5 +94,335 @@
     "canonicalField": "/origin/stateOrProvince",
     "transformation": "direct",
     "acceptedAt": "2026-10-07T18:40:30.232Z"
+  },
+  {
+    "inputField": "/from_address/street2",
+    "canonicalField": "/origin/line2",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/customerEmail",
+    "canonicalField": "/destination/email",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/shipTo/street2",
+    "canonicalField": "/destination/line2",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/dimensions/units",
+    "canonicalField": "/dimensions/unit",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/orderNumber",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/orderId",
+    "canonicalField": "/identifiers/orderId",
+    "transformation": "cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/orderDate",
+    "canonicalField": "/metadata/createdAt",
+    "transformation": "date:iso8601",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/advancedOptions/source",
+    "canonicalField": "/metadata/sourceSystem",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/items[]/name",
+    "canonicalField": "/packages[]/description",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ShipmentInfo/Account",
+    "canonicalField": "/carrier/accountNumber",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ShipmentInfo/ServiceType",
+    "canonicalField": "/carrier/serviceCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Content",
+    "canonicalField": "/customs/contentsType",
+    "transformation": "cast:string|normalize:contentsType",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/ExportDeclaration/InvoiceTotal",
+    "canonicalField": "/customs/declaredValue/amount",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Commodities/CountryOfManufacture",
+    "canonicalField": "/customs/lineItems[]/countryOfOrigin",
+    "transformation": "normalize:countryCode|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Commodities/HarmonizedCode",
+    "canonicalField": "/customs/lineItems[]/hsCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Commodities/UnitPrice",
+    "canonicalField": "/customs/lineItems[]/unitValue/amount",
+    "transformation": "direct|cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Recipient/Contact/CompanyName",
+    "canonicalField": "/destination/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Recipient/Contact/EmailAddress",
+    "canonicalField": "/destination/email",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Recipient/Contact/PersonName",
+    "canonicalField": "/destination/name",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Recipient/Contact/PhoneNumber",
+    "canonicalField": "/destination/phone",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ShipmentCreationDate",
+    "canonicalField": "/metadata/createdAt",
+    "transformation": "date:iso8601",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Shipper/Contact/CompanyName",
+    "canonicalField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Shipper/Contact/EmailAddress",
+    "canonicalField": "/origin/email",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Shipper/Contact/PersonName",
+    "canonicalField": "/origin/name",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Shipper/Contact/PhoneNumber",
+    "canonicalField": "/origin/phone",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Commodities/CustomsValue",
+    "canonicalField": "/customs/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/DeclaredValueCurrecyCode",
+    "canonicalField": "/customs/declaredValue/currency",
+    "transformation": "normalize:currency",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/InternationalDetail/Commodities/Quantity",
+    "canonicalField": "/customs/lineItems[]/quantity",
+    "transformation": "cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Packages/RequestedPackages[]/CustomerReferences",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/DeclaredValue",
+    "canonicalField": "/packages[]/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Packages/RequestedPackages[]/Description",
+    "canonicalField": "/packages[]/description",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Packages/RequestedPackages[]/@number",
+    "canonicalField": "/packages[]/packageId",
+    "transformation": "cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/VSART_BEZ",
+    "canonicalField": "/carrier/carrierName",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/VSART",
+    "canonicalField": "/carrier/serviceCode",
+    "transformation": "direct",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/INCO1",
+    "canonicalField": "/customs/incoterm",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/NAME1_E",
+    "canonicalField": "/destination/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/TELF1_E",
+    "canonicalField": "/destination/phone",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/PSTLZ_E",
+    "canonicalField": "/destination/postalCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/REGIO_E",
+    "canonicalField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/VBELN",
+    "canonicalField": "/identifiers/externalId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/BSTNK",
+    "canonicalField": "/identifiers/purchaseOrderNumber",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ERDAT",
+    "canonicalField": "/metadata/createdAt",
+    "transformation": "date:iso8601",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/NAME1_S",
+    "canonicalField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/TELF1_S",
+    "canonicalField": "/origin/phone",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/PSTLZ_S",
+    "canonicalField": "/origin/postalCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/REGIO_S",
+    "canonicalField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/INSURED_AMT",
+    "canonicalField": "/packages[]/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/INSURED_CURR",
+    "canonicalField": "/packages[]/declaredValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Service/Code",
+    "canonicalField": "/carrier/serviceCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ShipFrom/Address/AddressLine",
+    "canonicalField": "/origin/line1",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/Package[]/Dimensions/UnitOfMeasurement/Code",
+    "canonicalField": "/packages[]/dimensions/unit",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/items[]/lineItemKey",
+    "canonicalField": "/packages[]/packageId",
+    "transformation": "cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/ShipmentInfo/Currency",
+    "canonicalField": "/customs/declaredValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/KUNNR",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
+  },
+  {
+    "inputField": "/BRGEW",
+    "canonicalField": "/weight/value",
+    "transformation": "direct|cast:number",
+    "acceptedAt": "2026-10-08T00:00:00.000Z"
   }
 ]
