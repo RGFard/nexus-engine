@@ -146,4 +146,36 @@ describe("customs line item siblings (DHL international)", () => {
       false,
     );
   });
+
+  it("drops a customs line item that can't be completed, instead of shipping a half-filled one", async () => {
+    // Reproduces the live bug: a purely domestic payload (no InternationalDetail/Commodities
+    // at all) where the AI's only customs-ish signal was a bare /CountryCode field. It
+    // mapped that alone to /customs/lineItems[]/countryOfOrigin at low confidence;
+    // synthesizeLineItemSiblings correctly found no real description/quantity/unitValue to
+    // fill in (there wasn't any), so the line item was missing every field the schema
+    // requires. enforceCustomsLineItemCompleteness should drop it entirely rather than let
+    // an incomplete line item through to fail validation.
+    const domestic = structuredClone(dhl) as any;
+    delete domestic.InternationalDetail;
+    aiResponse = [ai("/Shipper/Address/CountryCode", "/customs/lineItems[]/countryOfOrigin", 0.48)];
+    const res = await normalize(domestic);
+
+    assert.equal(
+      res.plan.mappings.some((m: any) => m.targetField.startsWith("/customs/lineItems[]/")),
+      false,
+      "an incomplete customs line item mapping should be dropped entirely",
+    );
+    assert.equal(res.targetPayload.customs ?? null, null);
+    assert.equal(res.validation.valid, true, JSON.stringify(res.validation.errors));
+  });
+
+  it("keeps a customs line item that genuinely is complete", async () => {
+    // Sanity check against over-correction: when every required field IS covered (the
+    // normal DHL international case), enforceCustomsLineItemCompleteness must not touch it.
+    aiResponse = LINE_ITEM_AI;
+    const res = await normalize(dhl);
+
+    assert.ok(res.plan.mappings.some((m: any) => m.targetField === "/customs/lineItems[]/hsCode"));
+    assert.equal(res.validation.valid, true, JSON.stringify(res.validation.errors));
+  });
 });

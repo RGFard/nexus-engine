@@ -277,6 +277,19 @@ export class AiMappingService {
     mappings = synthesizeLineItemSiblings(mappings, sourceAnalysis);
     mappings = injectLineItemCurrencyDefault(mappings, sourceAnalysis);
 
+    // A customs line item is optional (the whole /customs block can be omitted), but one
+    // that DOES exist is schema-required to carry description, quantity, and a full
+    // unitValue (amount + currency) — a real commercial-invoice line, not a bare country
+    // code. Seen live: a purely domestic US→US payload where the AI's only customs-ish
+    // signal was a stray /CountryCode field; it mapped that alone to
+    // /customs/lineItems[]/countryOfOrigin at 0.48 confidence, synthesizeLineItemSiblings
+    // above correctly found no real description/quantity/value to fill in (there wasn't
+    // any), and the result was a half-filled line item that fails validation on exactly
+    // the fields that were never there to map. Shipping no customs data is correct for a
+    // domestic shipment; shipping a line item missing its required fields is not — drop
+    // customs/lineItems[] mappings entirely rather than emit one that can't be complete.
+    mappings = enforceCustomsLineItemCompleteness(mappings);
+
     // /customs/contentsType has a fixed canonical enum; force the normalization step
     // regardless of what heuristic/AI proposed, the same way parcel unit targets are
     // deterministically overridden above.
@@ -992,6 +1005,34 @@ function injectLineItemCurrencyDefault(
         "customs line item's unitValue since there is no per-line-item currency field.",
     },
   ];
+}
+
+/** Every target leaf a customs line item needs to pass schema validation (unitValue is itself required amount+currency). */
+const REQUIRED_LINE_ITEM_TARGETS = [
+  "/customs/lineItems[]/description",
+  "/customs/lineItems[]/quantity",
+  "/customs/lineItems[]/unitValue/amount",
+  "/customs/lineItems[]/unitValue/currency",
+];
+
+function enforceCustomsLineItemCompleteness(mappings: FieldMapping[]): FieldMapping[] {
+  const lineItemMappings = mappings.filter((m) => m.targetField.startsWith("/customs/lineItems[]/"));
+  if (lineItemMappings.length === 0) return mappings;
+
+  const covered = new Set(lineItemMappings.map((m) => m.targetField));
+  const missingRequired = REQUIRED_LINE_ITEM_TARGETS.filter((t) => !covered.has(t));
+  if (missingRequired.length === 0) return mappings;
+
+  log.info(
+    {
+      droppedTargets: lineItemMappings.map((m) => m.targetField),
+      droppedSources: lineItemMappings.map((m) => m.sourceField),
+      missingRequired,
+    },
+    "Dropping incomplete customs line item mappings — can't cover every required field",
+  );
+
+  return mappings.filter((m) => !m.targetField.startsWith("/customs/lineItems[]/"));
 }
 
 const TOP_LEVEL_WEIGHT_UNIT_PATTERNS: RegExp[] = [
