@@ -48,6 +48,75 @@ const CONTENTS_TYPE_MAP: Record<string, string> = {
   returns: "returned_goods",
 };
 
+// Canonical serviceLevel enum: ["economy", "standard", "express", "overnight",
+// "same_day", null] (from shipment-create-request.schema.json). Carriers expose this
+// as their own product code or service-type string rather than this fixed vocabulary
+// (DHL "P"/"U"/"K"/"T", UPS "03"/"01"/"02", FedEx "FEDEX_GROUND"/"PRIORITY_OVERNIGHT",
+// generic words like "ground" or "2-day"), so a direct passthrough into /serviceLevel
+// fails enum validation on every carrier whose raw value isn't already one of the five
+// canonical words. Unrecognized codes map to null (serviceLevel is nullable) rather than
+// guessing, the same reasoning that routes an unmapped contentsType to "other" instead
+// of failing -- except serviceLevel's enum has no catch-all value, so null is the only
+// schema-valid "I don't know" result.
+const SERVICE_LEVEL_MAP: Record<string, string> = {
+  // Canonical words pass through unchanged.
+  economy: "economy",
+  standard: "standard",
+  express: "express",
+  overnight: "overnight",
+  same_day: "same_day",
+  sameday: "same_day",
+
+  // Generic/common carrier vocabulary.
+  ground: "standard",
+  ground_home_delivery: "standard",
+  home_delivery: "standard",
+  priority: "express",
+  expedited: "express",
+  next_day: "overnight",
+  nextday: "overnight",
+  first_overnight: "overnight",
+  second_day: "express",
+  secondday: "express",
+  "2_day": "express",
+  "2day": "express",
+  third_day: "standard",
+  "3_day": "standard",
+  "3day": "standard",
+
+  // DHL Express product codes (letter codes from productCode / ServiceType).
+  p: "express", // EXPRESS WORLDWIDE
+  u: "express", // EXPRESS WORLDWIDE (nondoc)
+  n: "express", // DOMESTIC EXPRESS
+  k: "overnight", // EXPRESS 9:00
+  t: "overnight", // EXPRESS 12:00
+  y: "overnight", // EXPRESS 12:00 (nondoc)
+  w: "economy", // ECONOMY SELECT
+
+  // UPS numeric service codes.
+  "01": "overnight", // Next Day Air
+  "13": "overnight", // Next Day Air Saver
+  "14": "overnight", // Next Day Air Early
+  "02": "express", // 2nd Day Air
+  "59": "express", // 2nd Day Air A.M.
+  "07": "express", // Worldwide Express
+  "08": "express", // Worldwide Expedited
+  "03": "standard", // Ground
+  "12": "standard", // 3 Day Select
+  "11": "standard", // UPS Standard
+
+  // FedEx service-type strings.
+  fedex_ground: "standard",
+  fedex_express_saver: "express",
+  fedex_2_day: "express",
+  fedex_2_day_am: "express",
+  standard_overnight: "overnight",
+  priority_overnight: "overnight",
+  international_economy: "economy",
+  international_priority: "express",
+  international_first: "overnight",
+};
+
 export interface TransformContext {
   sourcePayload: unknown;
   mapping: FieldMapping;
@@ -142,6 +211,17 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     }
     const key = value.toLowerCase().trim().replace(/[\s-]+/g, "_");
     return CONTENTS_TYPE_MAP[key] ?? "other";
+  }
+
+  if (step === "normalize:serviceLevel") {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    const key = value.toLowerCase().trim().replace(/[\s-]+/g, "_");
+    return SERVICE_LEVEL_MAP[key] ?? null;
   }
 
   if (step === "date:date") {

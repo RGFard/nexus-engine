@@ -295,6 +295,18 @@ export class AiMappingService {
     // deterministically overridden above.
     mappings = enforceContentsTypeNormalization(mappings);
 
+    // /serviceLevel has the same fixed-enum shape as contentsType, and the same gap:
+    // every carrier exposes this as its own product/service code (DHL "P", UPS "03",
+    // FedEx "FEDEX_GROUND") rather than the canonical economy/standard/express/
+    // overnight/same_day vocabulary. The service_level concept's own canonicalPaths
+    // list /serviceLevel alongside /carrier/serviceCode (see logistics-synonyms.ts), so
+    // whenever the heuristic or AI resolves a source field to /serviceLevel specifically
+    // -- e.g. a source field literally named "serviceLevel" wins the exact-name tie-break
+    // over /carrier/serviceCode -- a bare "direct" transform ships the raw carrier code
+    // straight into an enum field it was never going to satisfy. Force the normalization
+    // step the same way contentsType's is forced above.
+    mappings = enforceServiceLevelNormalization(mappings);
+
     // SAP delivery documents share one weight-unit field (GEWEI) across both net (NTGEW)
     // and gross (BRGEW) weight in the same record. GEWEI is already wired to
     // /packages[]/weight/unit; when BRGEW (or any source) lands on the top-level
@@ -1076,6 +1088,14 @@ function enforceContentsTypeNormalization(mappings: FieldMapping[]): FieldMappin
   return mappings.map((m) =>
     m.targetField === "/customs/contentsType" && !m.transformation.includes("normalize:contentsType")
       ? { ...m, transformation: "cast:string|normalize:contentsType" }
+      : m,
+  );
+}
+
+function enforceServiceLevelNormalization(mappings: FieldMapping[]): FieldMapping[] {
+  return mappings.map((m) =>
+    m.targetField === "/serviceLevel" && !m.transformation.includes("normalize:serviceLevel")
+      ? { ...m, transformation: "cast:string|normalize:serviceLevel" }
       : m,
   );
 }
