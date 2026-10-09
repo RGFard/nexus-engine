@@ -1,1 +1,613 @@
-[]
+[
+  {
+    "sourceField": "/shipment/from_address/street2",
+    "targetField": "/origin/line2",
+    "transformation": "direct|cast:string",
+    "confidence": 0.95,
+    "reasoning": "Ship-from secondary address line (suite, floor, unit). street2 maps to line2 for additional address detail.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "be5d20a8f8fe",
+    "firstSeenAt": "2026-10-08T22:59:08.781Z",
+    "lastSeenAt": "2026-10-08T23:39:22.684Z",
+    "seenCount": 2,
+    "sourceSystem": null
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentInfo/Account",
+    "targetField": "/carrier/accountNumber",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Shipper account number maps to carrier accountNumber. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "36846c3514f5",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentInfo/ServiceType",
+    "targetField": "/carrier/serviceCode",
+    "transformation": "direct|cast:string",
+    "confidence": 0.65,
+    "reasoning": "Service type (P, etc.) is a carrier service identifier; maps to serviceCode, though not full canonical service level.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "821cc6cc108e",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:00:45.827Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Content",
+    "targetField": "/customs/contentsType",
+    "transformation": "cast:string|normalize:contentsType",
+    "confidence": 0.7,
+    "reasoning": "Content type (NON_DOCUMENTS, DOCUMENTS, etc.) maps to customs contentsType. May require value normalization to enum.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "5203463af761",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/CustomsValue",
+    "targetField": "/customs/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.85,
+    "reasoning": "Commodity customs value is the declared value amount for customs; must pair with currency.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "4ef5bcbdb88f",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:00:45.827Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentInfo/Currency",
+    "targetField": "/customs/declaredValue/currency",
+    "transformation": "direct|normalize:currency|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Shipment currency (USD) applies to customs declared value; normalize to uppercase ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "2286a09018ca",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:57:00.653Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/CountryOfManufacture",
+    "targetField": "/customs/lineItems[]/countryOfOrigin",
+    "transformation": "normalize:countryCode|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Country of manufacture maps to customs line item country of origin; requires ISO normalization.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "6628e3ccdedc",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:00:45.827Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/HarmonizedCode",
+    "targetField": "/customs/lineItems[]/hsCode",
+    "transformation": "direct|cast:string",
+    "confidence": 0.95,
+    "reasoning": "Harmonized code is the HS/tariff code. Exact semantic and name match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "648ca7afc570",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/UnitPrice",
+    "targetField": "/customs/lineItems[]/unitValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.85,
+    "reasoning": "Unit price (80) maps to line item unit value amount; represents per-unit declared value.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "9032ca4e3b0a",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:57:00.653Z",
+    "seenCount": 3,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Recipient/Contact/CompanyName",
+    "targetField": "/destination/company",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Recipient company name is destination company. Exact semantic match in destination context.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "dbe56356e3d2",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Recipient/Contact/EmailAddress",
+    "targetField": "/destination/email",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Recipient email is destination contact email. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "f21650f6da68",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Recipient/Contact/PersonName",
+    "targetField": "/destination/name",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Recipient person name is the destination contact name. Recipient context guarantees destination role.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "44d86293316c",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Recipient/Contact/PhoneNumber",
+    "targetField": "/destination/phone",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Recipient phone number is destination contact phone. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "4716aeaff627",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentCreationDate",
+    "targetField": "/metadata/createdAt",
+    "transformation": "date:iso8601",
+    "confidence": 0.75,
+    "reasoning": "Shipment creation date maps to canonical metadata createdAt timestamp. Source is date-only; target expects ISO 8601 UTC date-time.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "d51e0aa66986",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Shipper/Contact/CompanyName",
+    "targetField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Shipper company name is the origin company. Exact semantic match in origin context.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "611665ddf4a8",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Shipper/Contact/EmailAddress",
+    "targetField": "/origin/email",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Shipper email is the origin contact email. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "5144efe6b17e",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Shipper/Contact/PersonName",
+    "targetField": "/origin/name",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Shipper person name is the origin contact name. Shipper context guarantees origin role.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "8eecdbed1319",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Shipper/Contact/PhoneNumber",
+    "targetField": "/origin/phone",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Shipper phone number is the origin contact phone. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "c6d8d47251a1",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/DeclaredValue",
+    "targetField": "/packages[]/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.85,
+    "reasoning": "Shipment-level DeclaredValue is the monetary amount. Semantically this is package-level declared value (or customs value). Maps to packages declaredValue amount.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "f902acf88507",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/DeclaredValueCurrecyCode",
+    "targetField": "/packages[]/declaredValue/currency",
+    "transformation": "direct|normalize:currency|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Shipment-level currency code for declared value; maps to package declaredValue/currency. Normalize to uppercase ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "ef5a976f0c55",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:57:00.653Z",
+    "seenCount": 3,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/CustomerReferences",
+    "targetField": "/packages[]/packageId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "Customer-provided reference for package; semantically maps to client-assigned package identifier.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "2d266354b703",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/Quantity",
+    "targetField": "/customs/lineItems[]/quantity",
+    "transformation": "cast:number",
+    "confidence": 0.9,
+    "reasoning": "Commodity quantity maps to customs lineItem quantity. Target expects integer type.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "83b5a3e8a726",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipFrom/Name",
+    "targetField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "ShipFrom provides an alternative origin context (redundant with Shipper in this payload). Mapping to origin/company as organizational identifier when Shipper is absent or secondary.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "efea4a3b2040",
+    "firstSeenAt": "2026-10-08T23:27:46.622Z",
+    "lastSeenAt": "2026-10-08T23:27:46.622Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipTo/Address/StateProvinceCode",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "ShipTo StateProvinceCode maps to destination/stateOrProvince. Canonical field accepts code or name.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "d5805aa4cdbb",
+    "firstSeenAt": "2026-10-08T23:37:04.933Z",
+    "lastSeenAt": "2026-10-09T04:07:23.485Z",
+    "seenCount": 5,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/Shipper/Address/StateProvinceCode",
+    "targetField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "Shipper StateProvinceCode maps to origin/stateOrProvince. Canonical field accepts code or name.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "84884c4e5e41",
+    "firstSeenAt": "2026-10-08T23:37:04.933Z",
+    "lastSeenAt": "2026-10-09T04:07:23.485Z",
+    "seenCount": 5,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/shipment/to_address/state",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "Ship-to state/province. Source state field is canonical synonym for stateOrProvince.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "b566ebfb0ecd",
+    "firstSeenAt": "2026-10-08T23:39:22.684Z",
+    "lastSeenAt": "2026-10-08T23:39:22.684Z",
+    "seenCount": 1,
+    "sourceSystem": null
+  },
+  {
+    "sourceField": "/shipment/from_address/state",
+    "targetField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "Ship-from state/province. Source state field is canonical synonym for stateOrProvince.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "dd8d8abb3460",
+    "firstSeenAt": "2026-10-08T23:39:22.684Z",
+    "lastSeenAt": "2026-10-08T23:39:22.684Z",
+    "seenCount": 1,
+    "sourceSystem": null
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/Description",
+    "targetField": "/customs/contentsDescription",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Commodity description from international detail; maps to customs contents summary description.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "6e7735c8bcba",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/ExportDeclaration/InvoiceTotal",
+    "targetField": "/customs/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.9,
+    "reasoning": "Invoice total is the declared value for customs purposes. Maps to customs-level declaredValue amount.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "faaa62aa84fb",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 3,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentInfo/Currency",
+    "targetField": "/customs/lineItems[]/unitValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Currency from shipment info applies to customs line items; normalize to uppercase ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "0fafb64efda8",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Recipient/Address/StateOrProvinceCode",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Recipient state/province code is destination state/province. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "4382359325f9",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 3,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/ExportDeclaration/InvoiceDate",
+    "targetField": "/metadata/updatedAt",
+    "transformation": "date:iso8601",
+    "confidence": 0.6,
+    "reasoning": "Invoice date from export declaration; maps to metadata updated timestamp with lower confidence. Alternative: could map to extensions if invoice date tracking is carrier-specific.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "04a2769996b0",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Shipper/Address/StateOrProvinceCode",
+    "targetField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Shipper state/province code is origin state/province. Exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "e293f570dd05",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 3,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/Description",
+    "targetField": "/packages[]/description",
+    "transformation": "direct|cast:string",
+    "confidence": 0.95,
+    "reasoning": "Package description is exact semantic and name match. High confidence.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "89ae84c13efe",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/shipTo/state",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "Ship-to state is a state/province code. Maps to destination/stateOrProvince. Strong semantic alignment.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "a0c3bda4e6c5",
+    "firstSeenAt": "2026-10-08T23:42:45.333Z",
+    "lastSeenAt": "2026-10-08T23:42:45.333Z",
+    "seenCount": 1,
+    "sourceSystem": "ShipStation"
+  },
+  {
+    "sourceField": "/items[]/unitPrice",
+    "targetField": "/packages[]/declaredValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.75,
+    "reasoning": "Item unit price represents the value per unit; when a single item maps to a package, unitPrice serves as the package's declared value amount. Maps to packages[]/declaredValue/amount.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "541dce07bbd8",
+    "firstSeenAt": "2026-10-08T23:42:45.333Z",
+    "lastSeenAt": "2026-10-08T23:42:45.333Z",
+    "seenCount": 1,
+    "sourceSystem": "ShipStation"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/CustomerReferences",
+    "targetField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "Customer reference at first package level (ORD-88712) can also serve as client reference ID for the shipment when only one package.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "79d349b08280",
+    "firstSeenAt": "2026-10-08T23:57:00.653Z",
+    "lastSeenAt": "2026-10-08T23:57:00.653Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/Description",
+    "targetField": "/customs/lineItems[]/description",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Commodity description in customs context maps to customs lineItems description. High confidence exact semantic match.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "b64ef9cc6a67",
+    "firstSeenAt": "2026-10-08T23:57:00.653Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/DeclaredValueCurrecyCode",
+    "targetField": "/customs/declaredValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Shipment currency is also the customs declaration currency. Maps to customs declaredValue currency. Normalize to ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "2c04436d5915",
+    "firstSeenAt": "2026-10-09T00:03:39.795Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/CustomsValue",
+    "targetField": "/customs/lineItems[]/unitValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.85,
+    "reasoning": "CustomsValue represents per-unit value in customs context. Maps to lineItems unitValue amount.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "0acfb14b84dc",
+    "firstSeenAt": "2026-10-09T00:03:39.795Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/@number",
+    "targetField": "/packages[]/packageId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Package @number attribute is the package identifier within the shipment. Maps to packageId.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "724acf7b1c2f",
+    "firstSeenAt": "2026-10-09T00:03:39.795Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
+  }
+]
