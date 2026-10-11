@@ -1,0 +1,15 @@
+{
+  "NTGEW": "5.5",
+  "GEWEI": "KG",
+  "LFIMG": 3,
+  "ARKTX": "Widget part A",
+  "MATNR": "WIDGET-001",
+  "STRAS_S": "123 Warehouse Rd",
+  "ORT01_S": "Chicago",
+  "LAND1_S": "US",
+  "NAME1_S": "Sender Inc",
+  "STRAS_E": "456 Customer Ave",
+  "ORT01_E": "New York",
+  "LAND1_E": "US",
+  "NAME1_E": "Recipient Corp"
+}

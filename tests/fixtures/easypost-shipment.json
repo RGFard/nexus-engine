@@ -1,0 +1,20 @@
+{
+  "from_address": {
+    "street1": "1 Main St",
+    "city": "Boston",
+    "zip": "02108",
+    "country": "US"
+  },
+  "to_address": {
+    "street1": "2 Pine St",
+    "city": "Denver",
+    "zip": "80202",
+    "country": "US"
+  },
+  "parcel": {
+    "weight": 16,
+    "length": 10,
+    "width": 8,
+    "height": 4
+  }
+}
