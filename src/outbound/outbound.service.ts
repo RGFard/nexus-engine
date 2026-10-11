@@ -5,6 +5,7 @@ import type { SchemaValidationService } from "../services/schema-validation.serv
 import { createChildLogger } from "../utils/logger.js";
 import type { OutboundTargetRegistry } from "./outbound-target.registry.js";
 import type { OutboundTransformRequest, OutboundTransformResponse } from "./outbound.types.js";
+import { applyUnitPolicy } from "./unit-conversion.js";
 
 export class OutboundError extends Error {
   constructor(
@@ -86,8 +87,14 @@ export class OutboundService {
       );
     }
 
+    // Units first: value and unit change as a pair, which a field mapping cannot do.
+    const { payload: sourcePayload, conversions: unitConversions } = applyUnitPolicy(
+      request.canonicalPayload,
+      target.plan.units,
+    );
+
     const execution = await this.executor.executeWithOptions({
-      sourcePayload: request.canonicalPayload,
+      sourcePayload,
       plan: target.plan,
     });
 
@@ -112,6 +119,7 @@ export class OutboundService {
         applied: execution.appliedMappings.length,
         skipped: execution.skippedMappings.length,
         parameters: appliedParameters,
+        unitConversions: unitConversions.length,
         valid,
         errorCount: errors?.length ?? 0,
       },
@@ -124,6 +132,7 @@ export class OutboundService {
       appliedMappings: execution.appliedMappings,
       skippedMappings: execution.skippedMappings,
       appliedParameters,
+      unitConversions,
       validation: { valid, errors },
     };
   }

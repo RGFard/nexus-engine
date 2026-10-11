@@ -70,7 +70,9 @@ describe("canonical -> DHL saved plan", () => {
     assert.equal(validate(dhl), true, JSON.stringify(validate.errors));
   });
 
-  it("does not convert units: a canonical unit DHL does not take fails the DHL schema", async () => {
+  // Conversion (oz to lb and so on) is the outbound service's job and runs before the
+  // plan's mappings; see tests/unit-conversion.test.ts and tests/outbound-route.test.ts.
+  it("the mappings alone do not convert units: an unconverted oz fails the DHL schema", async () => {
     const canonical = (await loadJson("tests/fixtures/canonical-shipment.json")) as Record<string, any>;
     canonical.packages[0].weight.unit = "oz";
 

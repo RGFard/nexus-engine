@@ -107,6 +107,18 @@ export async function registerOutboundRoutes(
               appliedMappings: { type: "array", items: mappingSchema },
               skippedMappings: { type: "array", items: mappingSchema },
               appliedParameters: { type: "array", items: { type: "string" } },
+              unitConversions: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    path: { type: "string" },
+                    kind: { type: "string" },
+                    from: { type: "object", additionalProperties: true },
+                    to: { type: "object", additionalProperties: true },
+                  },
+                },
+              },
               validation: {
                 type: "object",
                 properties: {

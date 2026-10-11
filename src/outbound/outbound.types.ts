@@ -1,4 +1,5 @@
 import type { FieldMapping, GenerateMappingResponse } from "../ai/models/mapping.types.js";
+import type { UnitConversion, UnitPolicy } from "./unit-conversion.js";
 
 /** A saved, fixed mapping plan from a canonical schema to one target system's schema. */
 export interface SavedOutboundPlan extends GenerateMappingResponse {
@@ -15,6 +16,8 @@ export interface SavedOutboundPlan extends GenerateMappingResponse {
    * Keyed by parameter name.
    */
   parameters?: Record<string, OutboundPlanParameter>;
+  /** Which canonical units the target takes, and what to convert the others to */
+  units?: UnitPolicy;
   /** Things the plan is known not to handle yet */
   knownGaps?: string[];
 }
@@ -53,6 +56,8 @@ export interface OutboundTransformResponse {
   skippedMappings: FieldMapping[];
   /** Names of the request parameters that were written into the target payload */
   appliedParameters: string[];
+  /** Every weight or dimensions block that was converted to a unit the target takes */
+  unitConversions: UnitConversion[];
   validation: OutboundValidation;
 }
 
@@ -63,5 +68,6 @@ export interface OutboundTargetListItem extends OutboundTargetRef {
   targetSchemaId: string;
   mappingCount: number;
   parameters: Record<string, OutboundPlanParameter>;
+  units: UnitPolicy;
   knownGaps: string[];
 }

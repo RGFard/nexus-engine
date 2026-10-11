@@ -5,6 +5,7 @@ import addFormatsModule from "ajv-formats";
 import { createChildLogger } from "../utils/logger.js";
 import { targetPlansRoot, targetSchemasRoot } from "../utils/paths.js";
 import type { OutboundTargetListItem, SavedOutboundPlan } from "./outbound.types.js";
+import { assertUnitPolicy } from "./unit-conversion.js";
 
 const PLAN_SUFFIX = ".plan.json";
 const SCHEMA_SUFFIX = ".schema.json";
@@ -62,6 +63,7 @@ export class OutboundTargetRegistry {
           const plan = JSON.parse(await fs.readFile(planPath, "utf-8")) as SavedOutboundPlan;
           const schema = JSON.parse(await fs.readFile(schemaPath, "utf-8")) as Record<string, unknown>;
           assertPlanShape(plan);
+          assertUnitPolicy(plan.units);
 
           this.targets.set(targetKey(system, schemaName), {
             system,
@@ -96,6 +98,7 @@ export class OutboundTargetRegistry {
         targetSchemaId: plan.targetSchemaId,
         mappingCount: plan.mappings.length,
         parameters: plan.parameters ?? {},
+        units: plan.units ?? {},
         knownGaps: plan.knownGaps ?? [],
       }))
       .sort((a, b) => a.system.localeCompare(b.system) || a.schemaName.localeCompare(b.schemaName));

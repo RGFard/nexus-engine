@@ -52,19 +52,34 @@ describe("POST /outbound/transform", () => {
     assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Weight, { Unit: "KG", Value: 2.5 });
   });
 
-  it("reports invalid, with the failing path, when the result breaks the DHL schema", async () => {
+  it("converts a unit DHL does not take, and says so", async () => {
+    // EasyPost weighs in ounces. DHL takes kg and lb only.
     const payload = structuredClone(canonical);
-    payload.packages[0].weight.unit = "oz";
+    payload.packages[0].weight = { value: 24, unit: "oz" };
+    payload.packages[0].dimensions = { length: 0.3, width: 0.2, height: 0.15, unit: "m" };
 
     const res = await transform({ canonicalPayload: payload, target: DHL });
     assert.equal(res.statusCode, 200);
 
-    const { validation } = res.json();
-    assert.equal(validation.valid, false);
-    assert.ok(
-      validation.errors.some((e: any) => e.instancePath === "/Packages/RequestedPackages/0/Weight/Unit"),
-      JSON.stringify(validation.errors),
-    );
+    const body = res.json();
+    assert.deepEqual(body.validation, { valid: true });
+    assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Weight, { Unit: "LB", Value: 1.5 });
+    assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Dimensions, {
+      Height: 15,
+      Length: 30,
+      Unit: "CM",
+      Width: 20,
+    });
+    // Reported in the order the blocks appear in the payload, so look each up by path.
+    const byPath = Object.fromEntries(body.unitConversions.map((c: any) => [c.path, c]));
+    assert.deepEqual(Object.keys(byPath).sort(), ["/packages/0/dimensions", "/packages/0/weight"]);
+    assert.deepEqual(byPath["/packages/0/weight"].from, { value: 24, unit: "oz" });
+    assert.deepEqual(byPath["/packages/0/weight"].to, { value: 1.5, unit: "lb" });
+  });
+
+  it("reports no conversions when every unit is one DHL takes", async () => {
+    const res = await transform({ canonicalPayload: canonical, target: DHL });
+    assert.deepEqual(res.json().unitConversions, []);
   });
 
   it("rejects a payload that is not valid canonical", async () => {
@@ -101,6 +116,7 @@ describe("POST /outbound/transform parameters", () => {
     const res = await app.inject({ method: "GET", url: "/outbound/targets" });
     const dhl = res.json().targets.find((t: any) => t.system === "dhl");
     assert.equal(dhl.parameters.serviceCode.targetField, "/ShipmentInfo/ServiceType");
+    assert.deepEqual(dhl.units.weight, { accepted: ["kg", "lb"], convert: { oz: "lb", g: "kg" } });
   });
 
   it("is invalid for DHL when the source carried no service code and none is supplied", async () => {
