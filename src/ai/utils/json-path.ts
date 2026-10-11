@@ -41,7 +41,14 @@ export function resolveMappingSourceValue(
   sourcePointer: string,
   targetPointer: string,
 ): unknown {
-  let value = getByPath(root, sourcePointer);
+  const targetHasArray = targetPointer.includes("[]");
+
+  // A scalar target can hold one value, so a `key[]/child` source reads item 0 only
+  // (what array:first means). An array target gets every item, one per target item.
+  let value =
+    !targetHasArray && hasItemWildcard(sourcePointer)
+      ? getByPath(root, sourcePointer.replace(/\[\]\//g, "/0/"))
+      : getByPath(root, sourcePointer);
 
   if (value === undefined) {
     if (sourcePointer.endsWith("[]")) {
@@ -53,8 +60,6 @@ export function resolveMappingSourceValue(
       }
     }
   }
-
-  const targetHasArray = targetPointer.includes("[]");
 
   let result: unknown;
   if (Array.isArray(value) && !targetHasArray) {
@@ -70,6 +75,11 @@ export function resolveMappingSourceValue(
   });
 
   return result;
+}
+
+/** True when the pointer reads a field inside array items, e.g. `/packages[]/weight/value`. */
+export function hasItemWildcard(pointer: string): boolean {
+  return pointer.includes("[]/");
 }
 
 export function setByPath(root: unknown, pointer: string, value: unknown): unknown {
@@ -92,14 +102,19 @@ function getAtSegments(current: unknown, segments: PathSegment[], index: number)
   }
 
   if (segment.isArray) {
-    if (!Array.isArray(current)) {
+    // `key[]` names an array held under `key` on the current node, so look the key up
+    // first. This branch used to test `current` itself, which is the parent object and
+    // never the array, so every wildcard read returned undefined and callers fell back
+    // to item 0: any package after the first was silently dropped.
+    const list = isPlainObject(current) ? current[segment.key] : undefined;
+    if (!Array.isArray(list)) {
       return undefined;
     }
     const childSegments = segments.slice(index + 1);
     if (childSegments.length === 0) {
-      return current;
+      return list;
     }
-    return current.map((item) => getAtSegments(item, childSegments, 0));
+    return list.map((item) => getAtSegments(item, childSegments, 0));
   }
 
   if (!isPlainObject(current) && !Array.isArray(current)) {
@@ -177,6 +192,11 @@ function setAtSegments(
       const item = current[i];
       if (item === undefined || item === null) {
         current[i] = {};
+      }
+      // A per-item value that is missing for this item leaves the item alone, instead of
+      // creating an empty parent object (e.g. `dimensions: {}`) that then fails validation.
+      if (!isBroadcastScalar && values[i] === undefined) {
+        continue;
       }
       setAtSegments(current[i], childSegments, 0, isBroadcastScalar ? values[0] : values[i]);
     }

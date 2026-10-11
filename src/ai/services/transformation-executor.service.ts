@@ -15,6 +15,7 @@ import {
   getByPath,
   PathError,
   pathDepth,
+  hasItemWildcard,
   resolveMappingSourceValue,
   setByPath,
 } from "../utils/json-path.js";
@@ -194,6 +195,35 @@ export class TransformationExecutorService implements TransformationExecutor {
       }
     }
 
+    // One value per array item (source `key[]/child`, target also under a `[]`): run the
+    // transformation on each item. Running it once on the whole array would turn
+    // ["KG", "LB"] into the single string "KG,LB".
+    const perItem =
+      Array.isArray(sourceValue) &&
+      hasItemWildcard(mapping.sourceField) &&
+      mapping.targetField.includes("[]");
+
+    if (perItem) {
+      const items = (sourceValue as unknown[]).map((item) =>
+        item === undefined || item === null
+          ? undefined
+          : transformArrayItem(item, mapping, sourcePayload),
+      );
+      if (items.every((item) => item === undefined)) {
+        return { applied: false, skipReason: "source_value_undefined", sourceValue };
+      }
+      try {
+        setByPath(targetPayload, mapping.targetField, items);
+        return { applied: true, sourceValue, targetValue: items };
+      } catch (err) {
+        return {
+          applied: false,
+          skipReason: err instanceof Error ? err.message : "set_path_failed",
+          sourceValue,
+        };
+      }
+    }
+
     let transformed = applyTransformationSteps(sourceValue, mapping.transformation, {
       sourcePayload,
       mapping,
@@ -255,6 +285,22 @@ export class TransformationExecutorService implements TransformationExecutor {
       };
     }
   }
+}
+
+/** The same pipeline a single value gets, applied to one item of a per-item array. */
+function transformArrayItem(item: unknown, mapping: FieldMapping, sourcePayload: unknown): unknown {
+  const context = { sourcePayload, mapping };
+  let out = applyTransformationSteps(item, mapping.transformation, context);
+  if (mapping.targetField.endsWith("/weight/unit")) {
+    out = applyTransformationSteps(out, "normalize:weightUnit", context);
+  }
+  if (mapping.targetField.endsWith("/dimensions/unit")) {
+    out = applyTransformationSteps(out, "normalize:dimensionUnit", context);
+  }
+  if (mapping.targetField.endsWith("/weight/value") && !Array.isArray(out)) {
+    out = applyTransformationSteps(out, "cast:number", context);
+  }
+  return out;
 }
 
 function mergeExtensionsTarget(
