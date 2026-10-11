@@ -1,0 +1,181 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "target://dhl/shipment-create-request",
+  "title": "DhlShipmentCreateRequest",
+  "description": "DHL shipment request, used as an outbound target. Field names come from tests/fixtures/dhl-international-shipment.json. Not a canonical schema: kept outside src/schemas so the registry does not load it.",
+  "x-target-system": "dhl",
+  "x-target-version": "1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ShipmentInfo", "Shipper", "Recipient", "Packages"],
+  "properties": {
+    "ShipmentCreationDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time the shipment is created or ready for pickup."
+    },
+    "DeclaredValueCurrecyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217 currency code of the declared value. The spelling (Currecy) is DHL's own field name."
+    },
+    "ShipmentInfo": {
+      "type": "object",
+      "description": "Service and billing account for the shipment.",
+      "additionalProperties": false,
+      "required": ["ServiceType"],
+      "properties": {
+        "Account": {
+          "type": "string",
+          "description": "DHL account number billed for the shipment."
+        },
+        "ServiceType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "DHL product or service code, for example P for Express Worldwide."
+        }
+      }
+    },
+    "Shipper": {
+      "type": "object",
+      "description": "Sender (origin, ship-from) party.",
+      "additionalProperties": false,
+      "required": ["Address"],
+      "properties": {
+        "Contact": {
+          "type": "object",
+          "description": "Sender contact details.",
+          "additionalProperties": false,
+          "properties": {
+            "PersonName": { "type": "string", "description": "Sender contact person name." },
+            "CompanyName": { "type": "string", "description": "Sender company name." },
+            "PhoneNumber": { "type": "string", "description": "Sender phone number." },
+            "EmailAddress": { "type": "string", "description": "Sender email address." }
+          }
+        },
+        "Address": {
+          "type": "object",
+          "description": "Sender postal address.",
+          "additionalProperties": false,
+          "required": ["StreetLines", "City", "CountryCode"],
+          "properties": {
+            "StreetLines": { "type": "string", "minLength": 1, "description": "Sender street address, first line." },
+            "City": { "type": "string", "minLength": 1, "description": "Sender city." },
+            "PostalCode": { "type": "string", "description": "Sender postal or ZIP code." },
+            "CountryCode": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "Sender ISO 3166-1 alpha-2 country code." }
+          }
+        }
+      }
+    },
+    "Recipient": {
+      "type": "object",
+      "description": "Receiver (destination, ship-to, consignee) party.",
+      "additionalProperties": false,
+      "required": ["Address"],
+      "properties": {
+        "Contact": {
+          "type": "object",
+          "description": "Receiver contact details.",
+          "additionalProperties": false,
+          "properties": {
+            "PersonName": { "type": "string", "description": "Receiver contact person name." },
+            "CompanyName": { "type": "string", "description": "Receiver company name." },
+            "PhoneNumber": { "type": "string", "description": "Receiver phone number." },
+            "EmailAddress": { "type": "string", "description": "Receiver email address." }
+          }
+        },
+        "Address": {
+          "type": "object",
+          "description": "Receiver postal address.",
+          "additionalProperties": false,
+          "required": ["StreetLines", "City", "CountryCode"],
+          "properties": {
+            "StreetLines": { "type": "string", "minLength": 1, "description": "Receiver street address, first line." },
+            "City": { "type": "string", "minLength": 1, "description": "Receiver city." },
+            "PostalCode": { "type": "string", "description": "Receiver postal or ZIP code." },
+            "CountryCode": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "Receiver ISO 3166-1 alpha-2 country code." }
+          }
+        }
+      }
+    },
+    "Packages": {
+      "type": "object",
+      "description": "Packages in the shipment.",
+      "additionalProperties": false,
+      "required": ["RequestedPackages"],
+      "properties": {
+        "RequestedPackages": {
+          "type": "array",
+          "minItems": 1,
+          "description": "One entry per physical package.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["Weight"],
+            "properties": {
+              "Weight": {
+                "type": "object",
+                "description": "Package weight.",
+                "additionalProperties": false,
+                "required": ["Value", "Unit"],
+                "properties": {
+                  "Value": { "type": "number", "exclusiveMinimum": 0, "description": "Weight numeric value." },
+                  "Unit": { "type": "string", "enum": ["KG", "LB"], "description": "Weight unit of measure." }
+                }
+              },
+              "Dimensions": {
+                "type": "object",
+                "description": "Package dimensions.",
+                "additionalProperties": false,
+                "required": ["Length", "Width", "Height", "Unit"],
+                "properties": {
+                  "Length": { "type": "number", "exclusiveMinimum": 0, "description": "Package length." },
+                  "Width": { "type": "number", "exclusiveMinimum": 0, "description": "Package width." },
+                  "Height": { "type": "number", "exclusiveMinimum": 0, "description": "Package height." },
+                  "Unit": { "type": "string", "enum": ["CM", "IN"], "description": "Dimension unit of measure." }
+                }
+              },
+              "CustomerReferences": {
+                "type": "string",
+                "description": "Customer reference for this package."
+              }
+            }
+          }
+        }
+      }
+    },
+    "InternationalDetail": {
+      "type": "object",
+      "description": "Customs information for international shipments.",
+      "additionalProperties": false,
+      "properties": {
+        "Content": {
+          "type": "string",
+          "enum": ["DOCUMENTS", "NON_DOCUMENTS"],
+          "description": "Whether the shipment contains documents or dutiable goods."
+        },
+        "ExportDeclaration": {
+          "type": "object",
+          "description": "Export declaration totals.",
+          "additionalProperties": false,
+          "properties": {
+            "InvoiceTotal": { "type": "number", "minimum": 0, "description": "Total commercial invoice value." }
+          }
+        },
+        "Commodities": {
+          "type": "object",
+          "description": "Goods being shipped, for customs.",
+          "additionalProperties": false,
+          "properties": {
+            "Description": { "type": "string", "description": "Description of the goods." },
+            "Quantity": { "type": "number", "minimum": 0, "description": "Number of units." },
+            "UnitPrice": { "type": "number", "minimum": 0, "description": "Value of one unit." },
+            "CustomsValue": { "type": "number", "minimum": 0, "description": "Total declared customs value." },
+            "HarmonizedCode": { "type": "string", "description": "HS tariff code." },
+            "CountryOfManufacture": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "ISO country code where the goods were made." }
+          }
+        }
+      }
+    }
+  }
+}
