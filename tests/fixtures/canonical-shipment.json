@@ -1,0 +1,66 @@
+{
+ "customs": {
+  "lineItems": [
+   {
+    "unitValue": {
+     "amount": 15,
+     "currency": "USD"
+    },
+    "countryOfOrigin": "DE",
+    "description": "Cotton T-shirts",
+    "hsCode": "610910",
+    "quantity": 10
+   }
+  ],
+  "declaredValue": {
+   "amount": 150,
+   "currency": "USD"
+  },
+  "contentsType": "merchandise"
+ },
+ "packages": [
+  {
+   "dimensions": {
+    "height": 15,
+    "length": 30,
+    "unit": "cm",
+    "width": 20
+   },
+   "weight": {
+    "unit": "kg",
+    "value": 2.5
+   },
+   "description": "Cotton T-shirts"
+  }
+ ],
+ "carrier": {
+  "accountNumber": "123456789",
+  "serviceCode": "P"
+ },
+ "destination": {
+  "city": "New York",
+  "company": "Import Inc",
+  "countryCode": "US",
+  "email": "john@import.com",
+  "line1": "456 Customer Ave",
+  "name": "John Doe",
+  "phone": "+1 212 555 0100",
+  "postalCode": "10001"
+ },
+ "identifiers": {
+  "clientReferenceId": "REF-001"
+ },
+ "metadata": {
+  "createdAt": "2026-10-07T10:00:00.000Z"
+ },
+ "origin": {
+  "city": "Berlin",
+  "company": "Export GmbH",
+  "countryCode": "DE",
+  "email": "anna@export.de",
+  "line1": "Hauptstrasse 5",
+  "name": "Anna Schmidt",
+  "phone": "+49 30 1234567",
+  "postalCode": "10115"
+ }
+}

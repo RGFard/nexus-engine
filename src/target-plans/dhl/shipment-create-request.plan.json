@@ -156,8 +156,8 @@
       "sourceField": "/packages[]/weight/unit",
       "targetField": "/Packages/RequestedPackages[]/Weight/Unit",
       "confidence": 1,
-      "transformation": "array:map|cast:string",
-      "reasoning": "Package weight unit. Passed through in canonical lowercase for now."
+      "transformation": "array:map|cast:string|normalize:uppercase",
+      "reasoning": "Package weight unit. Canonical lowercase, sent in capitals."
     },
     {
       "sourceField": "/packages[]/dimensions/length",
@@ -184,8 +184,8 @@
       "sourceField": "/packages[]/dimensions/unit",
       "targetField": "/Packages/RequestedPackages[]/Dimensions/Unit",
       "confidence": 1,
-      "transformation": "array:map|cast:string",
-      "reasoning": "Package dimension unit. Passed through in canonical lowercase for now."
+      "transformation": "array:map|cast:string|normalize:uppercase",
+      "reasoning": "Package dimension unit. Canonical lowercase, sent in capitals."
     },
     {
       "sourceField": "/identifiers/clientReferenceId",
@@ -249,7 +249,7 @@
     "/InternationalDetail/Content"
   ],
   "knownGaps": [
-    "Units go out in canonical lowercase (kg, cm). DHL wants KG and CM, so the result fails the DHL schema until an uppercase unit transform exists.",
+    "Units are sent in capitals but not converted. DHL takes KG, LB, CM and IN. A canonical g, oz or m goes out as G, OZ or M and fails the DHL schema.",
     "/InternationalDetail/Content is not mapped. It needs the reverse of normalize:contentsType (merchandise to NON_DOCUMENTS).",
     "/carrier/serviceCode is passed through unchanged. That is only right when the shipment came from DHL. A UPS or FedEx code needs translating first.",
     "DHL has a single Commodities block, so only the first customs line item is sent.",

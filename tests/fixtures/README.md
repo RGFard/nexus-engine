@@ -15,6 +15,7 @@ receives, so these files are the only record of what each system sends.
 | ShipStation | `shipstation-shipment.json` | `shipTo`, `billTo`, `advancedOptions.warehouseId`, no ship-from address |
 | ERP (SAP flat) | `erp-shipment.json` | flat, all-caps SAP field codes |
 | Generic | `shipto-billto-shipment.json` | `shipFrom`, `shipTo`, `billTo` |
+| Canonical | `canonical-shipment.json` | what the engine produces from `dhl-international-shipment.json`; input for the outbound plan test |
 
 ## SAP field codes in the ERP sample
 

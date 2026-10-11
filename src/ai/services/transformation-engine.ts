@@ -189,6 +189,12 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     return UNIT_ALIASES[lower] ?? lower;
   }
 
+  if (step === "normalize:uppercase") {
+    // For targets that spell codes in capitals (DHL wants KG and CM where canonical has
+    // kg and cm). Case only: it does not convert between units.
+    return typeof value === "string" ? value.trim().toUpperCase() : value;
+  }
+
   if (step === "normalize:weightUnit") {
     if (typeof value !== "string") {
       return value;
