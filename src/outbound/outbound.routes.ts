@@ -82,6 +82,12 @@ export async function registerOutboundRoutes(
                 schemaName: { type: "string", description: "Schema name (e.g. shipment-create-request)" },
               },
             },
+            parameters: {
+              type: "object",
+              additionalProperties: { type: "string" },
+              description:
+                "Values for the parameters this target's plan declares (see GET /outbound/targets), e.g. { \"serviceCode\": \"P\" }",
+            },
           },
         },
         response: {
@@ -100,6 +106,7 @@ export async function registerOutboundRoutes(
               targetPayload: {},
               appliedMappings: { type: "array", items: mappingSchema },
               skippedMappings: { type: "array", items: mappingSchema },
+              appliedParameters: { type: "array", items: { type: "string" } },
               validation: {
                 type: "object",
                 properties: {

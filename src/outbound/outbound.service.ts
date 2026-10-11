@@ -1,4 +1,5 @@
 import { TransformationExecutorService } from "../ai/services/transformation-executor.service.js";
+import { setByPath } from "../ai/utils/json-path.js";
 import type { SchemaRegistryService } from "../services/schema-registry.service.js";
 import type { SchemaValidationService } from "../services/schema-validation.service.js";
 import { createChildLogger } from "../utils/logger.js";
@@ -44,6 +45,23 @@ export class OutboundService {
       );
     }
 
+    // Check parameters before doing any work: a misspelled name must be an error, not a
+    // value that is quietly ignored while the request goes out without it.
+    const declared = target.plan.parameters ?? {};
+    const supplied = request.parameters ?? {};
+    for (const [name, value] of Object.entries(supplied)) {
+      if (!declared[name]) {
+        const accepted = Object.keys(declared);
+        throw new OutboundError(
+          `Unknown parameter "${name}" for ${system}/${schemaName}. Accepted: ${accepted.join(", ") || "none"}`,
+          400,
+        );
+      }
+      if (typeof value !== "string" || value.trim().length === 0) {
+        throw new OutboundError(`Parameter "${name}" must be a non-empty string`, 400);
+      }
+    }
+
     // Refuse anything that is not valid canonical. Mapping a wrong-shaped payload (for
     // example the whole /ai/normalize response instead of its targetPayload) would
     // produce a mostly empty target request rather than an error.
@@ -73,6 +91,14 @@ export class OutboundService {
       plan: target.plan,
     });
 
+    // Parameters are written after the mappings, so a supplied value wins over whatever
+    // the canonical payload carried for the same target field.
+    const appliedParameters: string[] = [];
+    for (const [name, value] of Object.entries(supplied)) {
+      setByPath(execution.targetPayload, declared[name]!.targetField, value.trim());
+      appliedParameters.push(name);
+    }
+
     const valid = target.validate(execution.targetPayload) as boolean;
     const errors = valid
       ? undefined
@@ -85,6 +111,7 @@ export class OutboundService {
         planId: target.plan.planId,
         applied: execution.appliedMappings.length,
         skipped: execution.skippedMappings.length,
+        parameters: appliedParameters,
         valid,
         errorCount: errors?.length ?? 0,
       },
@@ -96,6 +123,7 @@ export class OutboundService {
       targetPayload: execution.targetPayload,
       appliedMappings: execution.appliedMappings,
       skippedMappings: execution.skippedMappings,
+      appliedParameters,
       validation: { valid, errors },
     };
   }

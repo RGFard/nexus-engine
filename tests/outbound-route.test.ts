@@ -89,6 +89,69 @@ describe("POST /outbound/transform", () => {
   });
 });
 
+describe("POST /outbound/transform parameters", () => {
+  // What a non-DHL source looks like once it is canonical: no carrier block at all.
+  function withoutCarrier(): Record<string, any> {
+    const payload = structuredClone(canonical);
+    delete payload.carrier;
+    return payload;
+  }
+
+  it("lists the parameters a target accepts", async () => {
+    const res = await app.inject({ method: "GET", url: "/outbound/targets" });
+    const dhl = res.json().targets.find((t: any) => t.system === "dhl");
+    assert.equal(dhl.parameters.serviceCode.targetField, "/ShipmentInfo/ServiceType");
+  });
+
+  it("is invalid for DHL when the source carried no service code and none is supplied", async () => {
+    const res = await transform({ canonicalPayload: withoutCarrier(), target: DHL });
+    assert.equal(res.statusCode, 200);
+
+    const body = res.json();
+    assert.equal(body.validation.valid, false);
+    assert.deepEqual(body.appliedParameters, []);
+    assert.ok(body.validation.errors.some((e: any) => /ShipmentInfo/.test(e.message)));
+  });
+
+  it("is valid once the caller supplies the service code", async () => {
+    const res = await transform({
+      canonicalPayload: withoutCarrier(),
+      target: DHL,
+      parameters: { serviceCode: "P" },
+    });
+    assert.equal(res.statusCode, 200);
+
+    const body = res.json();
+    assert.deepEqual(body.validation, { valid: true });
+    assert.deepEqual(body.appliedParameters, ["serviceCode"]);
+    assert.deepEqual(body.targetPayload.ShipmentInfo, { ServiceType: "P" });
+  });
+
+  it("a supplied service code replaces the one in the canonical payload", async () => {
+    const payload = structuredClone(canonical);
+    payload.carrier.serviceCode = "03"; // a UPS code, meaningless to DHL
+
+    const res = await transform({ canonicalPayload: payload, target: DHL, parameters: { serviceCode: " U " } });
+
+    const body = res.json();
+    assert.equal(body.targetPayload.ShipmentInfo.ServiceType, "U");
+    assert.equal(body.targetPayload.ShipmentInfo.Account, "123456789");
+    assert.equal(body.validation.valid, true);
+  });
+
+  it("rejects a parameter the plan does not declare", async () => {
+    const res = await transform({ canonicalPayload: canonical, target: DHL, parameters: { servicecode: "P" } });
+    assert.equal(res.statusCode, 400);
+    assert.match(res.json().error, /Unknown parameter "servicecode".*Accepted: serviceCode/);
+  });
+
+  it("rejects an empty parameter value", async () => {
+    const res = await transform({ canonicalPayload: canonical, target: DHL, parameters: { serviceCode: "  " } });
+    assert.equal(res.statusCode, 400);
+    assert.match(res.json().error, /non-empty/);
+  });
+});
+
 describe("saved DHL plan integrity", () => {
   it("only names fields that exist in the canonical and DHL schemas", async () => {
     const plan = (await loadJson("src/target-plans/dhl/shipment-create-request.plan.json")) as Record<string, any>;
@@ -101,6 +164,9 @@ describe("saved DHL plan integrity", () => {
     for (const m of plan.mappings) {
       assert.ok(canonicalPaths.has(m.sourceField), `not a canonical field: ${m.sourceField}`);
       assert.ok(dhlPaths.has(m.targetField), `not a DHL field: ${m.targetField}`);
+    }
+    for (const [name, param] of Object.entries<any>(plan.parameters ?? {})) {
+      assert.ok(dhlPaths.has(param.targetField), `parameter ${name} targets a field DHL does not have: ${param.targetField}`);
     }
   });
 });

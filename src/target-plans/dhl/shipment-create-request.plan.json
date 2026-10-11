@@ -248,10 +248,16 @@
   "unmappedTargetFields": [
     "/InternationalDetail/Content"
   ],
+  "parameters": {
+    "serviceCode": {
+      "targetField": "/ShipmentInfo/ServiceType",
+      "description": "DHL product code to ship with, e.g. P for Express Worldwide. Send it when the shipment did not come from DHL: other sources carry no service code, or carry another carrier's code. When given, it replaces /carrier/serviceCode."
+    }
+  },
   "knownGaps": [
     "Units are sent in capitals but not converted. DHL takes KG, LB, CM and IN. A canonical g, oz or m goes out as G, OZ or M and fails the DHL schema.",
     "/InternationalDetail/Content is not mapped. It needs the reverse of normalize:contentsType (merchandise to NON_DOCUMENTS).",
-    "/carrier/serviceCode is passed through unchanged. That is only right when the shipment came from DHL. A UPS or FedEx code needs translating first.",
+    "/carrier/serviceCode is passed through unchanged unless the request supplies the serviceCode parameter. Without it, a UPS or FedEx code goes to DHL as is, and a source with no service code fails the DHL schema.",
     "DHL has a single Commodities block, so only the first customs line item is sent.",
     "Address line2, line3 and stateOrProvince are not sent. The DHL schema has no fields for them yet."
   ]

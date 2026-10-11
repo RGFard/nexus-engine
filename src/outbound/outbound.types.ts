@@ -9,8 +9,20 @@ export interface SavedOutboundPlan extends GenerateMappingResponse {
   sourceSchemaId: string;
   /** $id of the target schema the plan writes to */
   targetSchemaId: string;
+  /**
+   * Values the caller supplies with the request instead of the canonical payload: things
+   * that belong to the sender's dealings with this target, not to the shipment data.
+   * Keyed by parameter name.
+   */
+  parameters?: Record<string, OutboundPlanParameter>;
   /** Things the plan is known not to handle yet */
   knownGaps?: string[];
+}
+
+export interface OutboundPlanParameter {
+  /** Where the value is written in the target payload */
+  targetField: string;
+  description?: string;
 }
 
 export interface OutboundTargetRef {
@@ -24,6 +36,8 @@ export interface OutboundTargetRef {
 export interface OutboundTransformRequest {
   canonicalPayload: Record<string, unknown>;
   target: OutboundTargetRef;
+  /** Values for the parameters the target's plan declares, e.g. { "serviceCode": "P" } */
+  parameters?: Record<string, string>;
 }
 
 export interface OutboundValidation {
@@ -37,6 +51,8 @@ export interface OutboundTransformResponse {
   targetPayload: unknown;
   appliedMappings: FieldMapping[];
   skippedMappings: FieldMapping[];
+  /** Names of the request parameters that were written into the target payload */
+  appliedParameters: string[];
   validation: OutboundValidation;
 }
 
@@ -46,5 +62,6 @@ export interface OutboundTargetListItem extends OutboundTargetRef {
   sourceSchemaId: string;
   targetSchemaId: string;
   mappingCount: number;
+  parameters: Record<string, OutboundPlanParameter>;
   knownGaps: string[];
 }
