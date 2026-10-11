@@ -33,6 +33,14 @@ export class RequiredFieldResolverService {
       (f) => f.required && f.kind === "primitive" && isAncestorChainRequired(f.path, targetByPath),
     );
 
+    // A container (an object, or an array of objects) has no scalar value of its own, so
+    // mapping one onto a primitive target can only ever produce "[object Object]". The
+    // semantic matcher already skips object sources; this resolver ranked every source
+    // field and did not, which is how /carrier landed on a string target.
+    const scalarSources = sourceAnalysis.fields.filter(
+      (f) => !isContainerField(f, sourceAnalysis.fields),
+    );
+
     const missingRequired: string[] = [];
     const suggestions: RequiredFieldSuggestion[] = [];
     const augmentedMappings = [...mappings];
@@ -51,7 +59,7 @@ export class RequiredFieldResolverService {
 
       missingRequired.push(targetField.path);
 
-      const rankedSources = sourceAnalysis.fields
+      const rankedSources = scalarSources
         .map((sf) => ({
           source: sf,
           breakdown: computeSemanticSimilarity(sf, targetField),
@@ -111,6 +119,17 @@ export class RequiredFieldResolverService {
 
     return { missingRequired, suggestions, augmentedMappings };
   }
+}
+
+/** True for an object, or an array whose items are objects (it has child fields under `path[]/`). */
+function isContainerField(
+  field: SchemaFieldDescriptor,
+  allFields: SchemaFieldDescriptor[],
+): boolean {
+  if (field.kind === "object") return true;
+  if (field.kind !== "array") return false;
+  const childPrefix = `${field.path}[]/`;
+  return allFields.some((f) => f.path.startsWith(childPrefix));
 }
 
 function inferTransform(sourcePath: string, targetPath: string): string {
