@@ -9,6 +9,9 @@ import { semanticMatcherService } from "./ai/services/semantic-matcher.service.j
 import { CanonicalFieldsService } from "./ai/services/canonical-fields.service.js";
 import { vocabularyStore } from "./ai/services/custom-vocabulary.store.js";
 import { learnedVocabularyStore } from "./ai/services/learned-vocabulary.store.js";
+import { OutboundTargetRegistry } from "./outbound/outbound-target.registry.js";
+import { registerOutboundRoutes } from "./outbound/outbound.routes.js";
+import { OutboundService } from "./outbound/outbound.service.js";
 import { registerSchemaRoutes } from "./routes/schemas.routes.js";
 import { schemaRegistry } from "./services/schema-registry.service.js";
 import { SchemaValidationService } from "./services/schema-validation.service.js";
@@ -45,6 +48,7 @@ export async function buildApp(config: AppConfig) {
       tags: [
         { name: "schemas", description: "Schema registry and validation" },
         { name: "ai", description: "AI semantic mapping engine" },
+        { name: "outbound", description: "Canonical to target-system mapping from saved plans" },
       ],
     },
   });
@@ -75,6 +79,13 @@ export async function buildApp(config: AppConfig) {
     vocabularyStore,
     canonicalFields,
     learnedVocabularyStore,
+  });
+
+  const outboundTargets = new OutboundTargetRegistry();
+  await outboundTargets.initialize();
+  await registerOutboundRoutes(app, {
+    outboundTargets,
+    outboundService: new OutboundService(outboundTargets, schemaRegistry, validationService),
   });
 
   return app;

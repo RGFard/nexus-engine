@@ -9,3 +9,9 @@ export const projectRoot = path.resolve(__dirname, "..", "..");
 
 /** Directory containing JSON Schema files */
 export const schemasRoot = path.join(projectRoot, "src", "schemas");
+
+/** JSON Schemas of outbound target systems (not canonical, so not loaded by the registry) */
+export const targetSchemasRoot = path.join(projectRoot, "src", "target-schemas");
+
+/** Saved canonical -> target mapping plans, one folder per target system */
+export const targetPlansRoot = path.join(projectRoot, "src", "target-plans");
