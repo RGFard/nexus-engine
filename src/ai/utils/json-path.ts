@@ -43,12 +43,11 @@ export function resolveMappingSourceValue(
 ): unknown {
   const targetHasArray = targetPointer.includes("[]");
 
-  // A scalar target can hold one value, so a `key[]/child` source reads item 0 only
-  // (what array:first means). An array target gets every item, one per target item.
-  let value =
-    !targetHasArray && hasItemWildcard(sourcePointer)
-      ? getByPath(root, sourcePointer.replace(/\[\]\//g, "/0/"))
-      : getByPath(root, sourcePointer);
+  // A source nested in more arrays than its target (/shipments[]/packages[]/weight/value
+  // onto /packages[]/weight/value) reads the first item of each extra outer array, so the
+  // value lines up with the target's own array depth. A scalar target has depth 0, so it
+  // gets item 0 throughout (what array:first means).
+  let value = getByPath(root, collapseOuterWildcards(sourcePointer, countWildcards(targetPointer)));
 
   if (value === undefined) {
     if (sourcePointer.endsWith("[]")) {
@@ -75,6 +74,21 @@ export function resolveMappingSourceValue(
   });
 
   return result;
+}
+
+function countWildcards(pointer: string): number {
+  return (pointer.match(/\[\]/g) ?? []).length;
+}
+
+/** Replaces outer `[]/` wildcards with `/0/` until at most `keep` item wildcards remain. */
+function collapseOuterWildcards(pointer: string, keep: number): string {
+  let extra = (pointer.match(/\[\]\//g) ?? []).length - keep;
+  let out = pointer;
+  while (extra > 0) {
+    out = out.replace("[]/", "/0/");
+    extra -= 1;
+  }
+  return out;
 }
 
 /** True when the pointer reads a field inside array items, e.g. `/packages[]/weight/value`. */

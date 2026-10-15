@@ -281,7 +281,11 @@ export function computeSemanticSimilarity(
   // confines the floor to the root-level, no-shared-parent case the comment above
   // describes (tracking_number, shipment_id, etc.) without re-inflating concepts that
   // were already scored deliberately low for a reason.
-  if (sourceConcept && targetConcept && sourceConcept === targetConcept && parentContext === 0) {
+  // Not when both sides have a known context and they differ (ship_from state vs
+  // /destination/stateOrProvince): parentContext is 0 there because the pair is wrong,
+  // and flooring it let it outscore the correct same-context pair.
+  const crossContext = Boolean(sourceCtx && targetCtx && sourceCtx !== targetCtx);
+  if (sourceConcept && targetConcept && sourceConcept === targetConcept && parentContext === 0 && !crossContext) {
     const concept = LOGISTICS_CONCEPTS.find((c) => c.id === sourceConcept);
     const stripArraysLower = (p: string) => p.replace(/\[\]/g, "").toLowerCase();
     const isPrimaryCanonicalPath =

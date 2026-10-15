@@ -89,12 +89,19 @@ export class SemanticMatcherService {
       reasoning: string;
     }> = [];
 
+    // Arrays of objects are containers, like objects: only their leaf fields map. Pairing
+    // the containers themselves (/shipments[]/packages -> /packages) wrote the first item
+    // over the whole target array.
+    const isContainer = (f: SchemaFieldDescriptor, all: SchemaFieldDescriptor[]) =>
+      f.kind === "object" ||
+      (f.kind === "array" && all.some((o) => o.path.startsWith(`${f.path}[]/`)));
+
     for (const sf of source.fields) {
-      if (sf.kind === "object") {
+      if (isContainer(sf, source.fields)) {
         continue;
       }
       for (const tf of target.fields) {
-        if (tf.kind === "object") {
+        if (isContainer(tf, target.fields)) {
           continue;
         }
         const breakdown = computeSemanticSimilarity(sf, tf);
