@@ -17,5 +17,14 @@
     "postalCode": "07114",
     "countryCode": "US",
     "phone": "+1 973 555 0144"
+  },
+  "88001": {
+    "company": "Sample Fulfillment Central",
+    "line1": "780 Freight Center Dr",
+    "city": "Columbus",
+    "stateOrProvince": "OH",
+    "postalCode": "43217",
+    "countryCode": "US",
+    "phone": "+1 614 555 0188"
   }
 }
