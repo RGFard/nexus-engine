@@ -745,8 +745,11 @@ function inferTransformation(sourceField: string, targetField: string): string {
 // mappings so the AI cannot silently fabricate an origin address from the
 // recipient's fields.
 
-const DEST_SRC_RE = /^\/(?:shipto|billto|recipient|consignee|deliveryaddress|buyer|customer)\//i;
-const ORIGIN_SRC_RE = /^\/(?:shipfrom|shipper|sender|origin)\//i;
+// Any path segment, not only the root (ShipStation v2 nests them: /shipments[]/ship_to/...),
+// with or without underscores (ship_to, to_address).
+const DEST_SRC_RE =
+  /(?:^|\/)(?:ship_?to|bill_?to|to_?address|recipient|consignee|delivery_?address|buyer|customer)(?:\[\])?\//i;
+const ORIGIN_SRC_RE = /(?:^|\/)(?:ship_?from|from_?address|shipper|sender|origin)(?:\[\])?\//i;
 
 function filterCrossContextMappings(mappings: FieldMapping[]): FieldMapping[] {
   return mappings.filter((m) => {
@@ -788,6 +791,15 @@ const ORIGIN_REF_PATTERNS: Array<{
     extensionKey: "originRef",
     reasoning:
       "advancedOptions.warehouseId is a ShipStation origin-warehouse reference; " +
+      "stored as extensions.originRef for downstream resolution into a full address.",
+  },
+  {
+    // ShipStation API v2 (ShipEngine-based): shipments carry warehouse_id or a ship_from
+    // address. Matches /warehouse_id and /shipments[]/warehouse_id.
+    pattern: /^(?:\/shipments\[\])?\/warehouse_id$/i,
+    extensionKey: "originRef",
+    reasoning:
+      "warehouse_id is a ShipStation v2 origin-warehouse reference; " +
       "stored as extensions.originRef for downstream resolution into a full address.",
   },
 ];

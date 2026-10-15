@@ -4,6 +4,7 @@ import swaggerUi from "@fastify/swagger-ui";
 import { registerAiMappingRoutes } from "./ai/routes/ai-mapping.routes.js";
 import { registerVocabularyRoutes } from "./ai/routes/vocabulary.routes.js";
 import { createTransformationExecutorRegistry } from "./ai/services/transformation-executor.service.js";
+import { LocationRegistry } from "./ai/services/location-registry.service.js";
 import { schemaRefResolver } from "./ai/services/schema-ref-resolver.service.js";
 import { semanticMatcherService } from "./ai/services/semantic-matcher.service.js";
 import { CanonicalFieldsService } from "./ai/services/canonical-fields.service.js";
@@ -68,7 +69,10 @@ export async function buildApp(config: AppConfig) {
 
   app.get("/health", async () => ({ status: "ok" }));
 
-  const transformationRegistry = createTransformationExecutorRegistry(validationService);
+  const transformationRegistry = createTransformationExecutorRegistry(
+    validationService,
+    new LocationRegistry(),
+  );
 
   await registerSchemaRoutes(app, validationService);
   await registerAiMappingRoutes(app, {

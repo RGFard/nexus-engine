@@ -1,0 +1,21 @@
+{
+  "_comment": "Warehouse ID -> ship-from address, in canonical address fields (line1, line2, city, stateOrProvince, postalCode, countryCode, name, company, phone). The two entries below are sample data for the ShipStation test fixtures, not real warehouses.",
+  "98765": {
+    "company": "Sample Fulfillment West",
+    "line1": "1200 Distribution Way",
+    "city": "Reno",
+    "stateOrProvince": "NV",
+    "postalCode": "89502",
+    "countryCode": "US",
+    "phone": "+1 775 555 0100"
+  },
+  "se-277331": {
+    "company": "Sample Fulfillment East",
+    "line1": "45 Harbor Logistics Pkwy",
+    "city": "Newark",
+    "stateOrProvince": "NJ",
+    "postalCode": "07114",
+    "countryCode": "US",
+    "phone": "+1 973 555 0144"
+  }
+}

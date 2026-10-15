@@ -12,7 +12,9 @@ receives, so these files are the only record of what each system sends.
 | DHL (international) | `dhl-international-shipment.json` | `Shipper`, `Recipient`, `Packages.RequestedPackages[]`, `InternationalDetail` |
 | DHL (domestic) | `dhl-shipment.json` | `senderDetails`, `receiverDetails`, `packages[]`, `productCode` |
 | EasyPost | `easypost-shipment.json` | `from_address`, `to_address`, `parcel` |
-| ShipStation | `shipstation-shipment.json` | `shipTo`, `billTo`, `advancedOptions.warehouseId`, no ship-from address |
+| ShipStation v1 | `shipstation-shipment.json` | `shipTo`, `billTo`, `advancedOptions.warehouseId`, no ship-from address; origin comes from `data/locations/warehouses.json` |
+| ShipStation v2 | `shipstation-v2-shipment.json` | `shipments[]` with `ship_to`, `ship_from`, `packages[]` |
+| ShipStation v2 | `shipstation-v2-warehouse-shipment.json` | `shipments[]` with `ship_to` and `warehouse_id` instead of `ship_from` |
 | ERP (SAP flat) | `erp-shipment.json` | flat, all-caps SAP field codes |
 | Generic | `shipto-billto-shipment.json` | `shipFrom`, `shipTo`, `billTo` |
 | Canonical | `canonical-shipment.json` | what the engine produces from `dhl-international-shipment.json`; input for the outbound plan test |

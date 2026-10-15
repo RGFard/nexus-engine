@@ -1,0 +1,25 @@
+{
+  "shipments": [
+    {
+      "carrier_id": "se-123890",
+      "service_code": "usps_priority_mail",
+      "warehouse_id": "se-277331",
+      "ship_to": {
+        "name": "Amanda Miller",
+        "phone": "555-555-5555",
+        "address_line1": "525 S Winchester Blvd",
+        "city_locality": "San Jose",
+        "state_province": "CA",
+        "postal_code": "95128",
+        "country_code": "US",
+        "address_residential_indicator": "yes"
+      },
+      "packages": [
+        {
+          "weight": { "value": 20, "unit": "ounce" },
+          "dimensions": { "unit": "inch", "length": 12, "width": 8, "height": 4 }
+        }
+      ]
+    }
+  ]
+}

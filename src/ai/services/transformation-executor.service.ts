@@ -22,13 +22,17 @@ import {
 import { applyCanonicalDefaults } from "../utils/canonical-defaults.js";
 import { applyTransformationSteps } from "./transformation-engine.js";
 import type { SchemaValidationService } from "../../services/schema-validation.service.js";
+import type { LocationRegistry, OriginResolution } from "./location-registry.service.js";
 
 const log = aiLog("transformation-executor");
 
 export class TransformationExecutorService implements TransformationExecutor {
   readonly name = "default";
 
-  constructor(private readonly validationService?: SchemaValidationService) {}
+  constructor(
+    private readonly validationService?: SchemaValidationService,
+    private readonly locationRegistry?: LocationRegistry,
+  ) {}
 
   async execute(context: TransformationContext): Promise<TransformationResult> {
     return this.executeWithOptions({
@@ -130,6 +134,13 @@ export class TransformationExecutorService implements TransformationExecutor {
 
     pruneIncompleteMoneyObjects(targetPayload);
 
+    // A source that names its warehouse instead of sending an address (ShipStation) gets
+    // its origin filled from the location table, before defaults and validation.
+    let originResolution: OriginResolution = { status: "not-needed" };
+    if (this.locationRegistry && isPlainObject(targetPayload)) {
+      originResolution = this.locationRegistry.resolveOrigin(targetPayload);
+    }
+
     if (
       options.applyCanonicalDefaults &&
       options.targetSchemaForDefaults &&
@@ -155,13 +166,18 @@ export class TransformationExecutorService implements TransformationExecutor {
         targetPayload,
         version,
       );
-      response.validation = {
-        valid: validation.valid,
-        errors: validation.errors?.map((e) => ({
-          instancePath: e.instancePath,
-          message: e.message,
-        })),
-      };
+      const errors = validation.errors?.map((e) => ({
+        instancePath: e.instancePath,
+        message: e.message,
+      }));
+      // Say why origin is missing when the cause is a warehouse the table doesn't know.
+      if (!validation.valid && originResolution.status === "not-found") {
+        errors?.unshift({
+          instancePath: "/extensions/originRef",
+          message: `warehouse ${originResolution.ref} is not in the location table`,
+        });
+      }
+      response.validation = { valid: validation.valid, errors };
       if (!validation.valid) {
         log.warn(
           { domain, schemaName, errorCount: validation.errors?.length },
@@ -432,8 +448,9 @@ export class TransformationExecutorRegistry {
 
 export function createTransformationExecutorRegistry(
   validationService?: SchemaValidationService,
+  locationRegistry?: LocationRegistry,
 ): TransformationExecutorRegistry {
-  const executor = new TransformationExecutorService(validationService);
+  const executor = new TransformationExecutorService(validationService, locationRegistry);
   return new TransformationExecutorRegistry(executor);
 }
 
