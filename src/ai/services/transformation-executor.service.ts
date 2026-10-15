@@ -20,6 +20,7 @@ import {
   setByPath,
 } from "../utils/json-path.js";
 import { applyCanonicalDefaults } from "../utils/canonical-defaults.js";
+import { inheritTotalWeightUnit } from "../utils/weight-unit-inheritance.js";
 import { applyTransformationSteps } from "./transformation-engine.js";
 import type { SchemaValidationService } from "../../services/schema-validation.service.js";
 import type { LocationRegistry, OriginResolution } from "./location-registry.service.js";
@@ -133,6 +134,12 @@ export class TransformationExecutorService implements TransformationExecutor {
     );
 
     pruneIncompleteMoneyObjects(targetPayload);
+
+    // A total weight sent as a bare number (FedEx totalWeight) takes its unit from the packages.
+    if (isPlainObject(targetPayload)) {
+      const inherited = inheritTotalWeightUnit(targetPayload);
+      if (inherited) log.info({ unit: inherited }, "Total weight unit taken from package weights");
+    }
 
     // A source that names its warehouse instead of sending an address (ShipStation) gets
     // its origin filled from the location table, before defaults and validation.

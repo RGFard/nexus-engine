@@ -1,0 +1,75 @@
+{
+  "accountNumber": {
+    "value": "740561073"
+  },
+  "labelResponseOptions": "URL_ONLY",
+  "requestedShipment": {
+    "shipDatestamp": "2026-10-15",
+    "shipper": {
+      "contact": {
+        "personName": "Acme Warehouse",
+        "companyName": "Acme Corp",
+        "phoneNumber": "9015551234"
+      },
+      "address": {
+        "streetLines": [
+          "100 Main St"
+        ],
+        "city": "Memphis",
+        "stateOrProvinceCode": "TN",
+        "postalCode": "38118",
+        "countryCode": "US"
+      }
+    },
+    "recipients": [
+      {
+        "contact": {
+          "personName": "Jane Doe",
+          "phoneNumber": "3105550100"
+        },
+        "address": {
+          "streetLines": [
+            "200 Oak Ave",
+            "Apt 4"
+          ],
+          "city": "Los Angeles",
+          "stateOrProvinceCode": "CA",
+          "postalCode": "90001",
+          "countryCode": "US",
+          "residential": true
+        }
+      }
+    ],
+    "serviceType": "FEDEX_GROUND",
+    "packagingType": "YOUR_PACKAGING",
+    "totalWeight": 5.2,
+    "pickupType": "USE_SCHEDULED_PICKUP",
+    "shippingChargesPayment": {
+      "paymentType": "SENDER"
+    },
+    "labelSpecification": {
+      "imageType": "PDF",
+      "labelStockType": "PAPER_85X11_TOP_HALF_LABEL"
+    },
+    "requestedPackageLineItems": [
+      {
+        "weight": {
+          "units": "LB",
+          "value": 5.2
+        },
+        "dimensions": {
+          "length": 12,
+          "width": 10,
+          "height": 8,
+          "units": "IN"
+        },
+        "customerReferences": [
+          {
+            "customerReferenceType": "CUSTOMER_REFERENCE",
+            "value": "REF-001"
+          }
+        ]
+      }
+    ]
+  }
+}

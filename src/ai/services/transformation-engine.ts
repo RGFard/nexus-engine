@@ -324,7 +324,10 @@ function applyConcat(value: unknown, step: string, context: TransformContext): u
     // see transformation-generation.prompt.md for the documented canonical form.
     const indexMatch = field.match(/^\{\[?(\d+)\]?\}$/);
     if (indexMatch) {
-      const v = Array.isArray(value) ? value[Number(indexMatch[1])] : undefined;
+      // A scalar here means an earlier step (usually array:first) already took the
+      // element out, so it stands in for item 0.
+      const index = Number(indexMatch[1]);
+      const v = Array.isArray(value) ? value[index] : index === 0 ? value : undefined;
       return v === null || v === undefined ? "" : String(v);
     }
 

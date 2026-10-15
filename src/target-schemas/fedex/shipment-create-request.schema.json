@@ -1,0 +1,478 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "target://fedex/shipment-create-request",
+  "title": "FedExShipmentCreateRequest",
+  "description": "FedEx Ship API create-shipment request (POST /ship/v1/shipments), used as an outbound target. Covers the fields a basic domestic or international parcel shipment needs; FedEx accepts many more optional ones.",
+  "x-target-system": "fedex",
+  "x-target-version": "1.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "accountNumber",
+    "labelResponseOptions",
+    "requestedShipment"
+  ],
+  "definitions": {
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contact",
+        "address"
+      ],
+      "properties": {
+        "contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phoneNumber"
+          ],
+          "properties": {
+            "personName": {
+              "type": "string",
+              "description": "Contact person name."
+            },
+            "companyName": {
+              "type": "string",
+              "description": "Company name."
+            },
+            "phoneNumber": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Contact phone number. FedEx requires it for shipper and recipient."
+            },
+            "emailAddress": {
+              "type": "string",
+              "description": "Contact email address."
+            }
+          }
+        },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "streetLines",
+            "city",
+            "countryCode"
+          ],
+          "properties": {
+            "streetLines": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 3,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Street address, one entry per line."
+            },
+            "city": {
+              "type": "string",
+              "minLength": 1,
+              "description": "City.",
+              "maxLength": 35
+            },
+            "stateOrProvinceCode": {
+              "type": "string",
+              "description": "State or province code. Required by FedEx for US and Canada."
+            },
+            "postalCode": {
+              "type": "string",
+              "description": "Postal or ZIP code."
+            },
+            "countryCode": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "description": "ISO 3166-1 alpha-2 country code."
+            },
+            "residential": {
+              "type": "boolean",
+              "description": "True for a residential address."
+            }
+          }
+        }
+      }
+    },
+    "weight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "units",
+        "value"
+      ],
+      "properties": {
+        "units": {
+          "type": "string",
+          "enum": [
+            "LB",
+            "KG"
+          ],
+          "description": "Weight unit."
+        },
+        "value": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Weight value."
+        }
+      }
+    },
+    "money": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "currency"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Amount."
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code."
+        }
+      }
+    }
+  },
+  "properties": {
+    "accountNumber": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "FedEx account number billed for the shipment."
+        }
+      }
+    },
+    "labelResponseOptions": {
+      "type": "string",
+      "enum": [
+        "URL_ONLY",
+        "LABEL"
+      ],
+      "description": "Return the label as a URL or as encoded label data."
+    },
+    "requestedShipment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "shipper",
+        "recipients",
+        "serviceType",
+        "packagingType",
+        "pickupType",
+        "shippingChargesPayment",
+        "labelSpecification",
+        "requestedPackageLineItems",
+        "totalWeight"
+      ],
+      "properties": {
+        "shipDatestamp": {
+          "type": "string",
+          "format": "date",
+          "description": "Ship date, YYYY-MM-DD."
+        },
+        "shipper": {
+          "$ref": "#/definitions/party",
+          "description": "Sender (origin, ship-from) party."
+        },
+        "recipients": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/party"
+          },
+          "description": "Receiver (destination, ship-to) parties. One for a normal shipment."
+        },
+        "serviceType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "FedEx service, for example FEDEX_GROUND or PRIORITY_OVERNIGHT."
+        },
+        "packagingType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Packaging, for example YOUR_PACKAGING or FEDEX_BOX."
+        },
+        "totalWeight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Total shipment weight, in the same unit as the package weights."
+        },
+        "pickupType": {
+          "type": "string",
+          "enum": [
+            "CONTACT_FEDEX_TO_SCHEDULE",
+            "DROPOFF_AT_FEDEX_LOCATION",
+            "USE_SCHEDULED_PICKUP"
+          ],
+          "description": "How the package gets to FedEx."
+        },
+        "shippingChargesPayment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "paymentType"
+          ],
+          "properties": {
+            "paymentType": {
+              "type": "string",
+              "enum": [
+                "SENDER",
+                "RECIPIENT",
+                "THIRD_PARTY",
+                "COLLECT"
+              ],
+              "description": "Who pays the shipping charges."
+            }
+          }
+        },
+        "labelSpecification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "imageType",
+            "labelStockType"
+          ],
+          "properties": {
+            "imageType": {
+              "type": "string",
+              "enum": [
+                "PDF",
+                "PNG",
+                "ZPLII",
+                "EPL2"
+              ],
+              "description": "Label file format."
+            },
+            "labelStockType": {
+              "type": "string",
+              "enum": [
+                "PAPER_4X6",
+                "STOCK_4X675",
+                "PAPER_4X675",
+                "PAPER_4X8",
+                "PAPER_4X9",
+                "PAPER_7X475",
+                "PAPER_85X11_BOTTOM_HALF_LABEL",
+                "PAPER_85X11_TOP_HALF_LABEL",
+                "PAPER_LETTER",
+                "STOCK_4X675_LEADING_DOC_TAB",
+                "STOCK_4X8",
+                "STOCK_4X9_LEADING_DOC_TAB",
+                "STOCK_4X6",
+                "STOCK_4X675_TRAILING_DOC_TAB",
+                "STOCK_4X9_TRAILING_DOC_TAB",
+                "STOCK_4X9",
+                "STOCK_4X85_TRAILING_DOC_TAB",
+                "STOCK_4X105_TRAILING_DOC_TAB"
+              ],
+              "description": "Label stock size."
+            }
+          }
+        },
+        "requestedPackageLineItems": {
+          "type": "array",
+          "minItems": 1,
+          "description": "One entry per physical package.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "weight"
+            ],
+            "properties": {
+              "weight": {
+                "$ref": "#/definitions/weight",
+                "description": "Package weight."
+              },
+              "dimensions": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "length",
+                  "width",
+                  "height",
+                  "units"
+                ],
+                "properties": {
+                  "length": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Package length. Whole number."
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Package width. Whole number."
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Package height. Whole number."
+                  },
+                  "units": {
+                    "type": "string",
+                    "enum": [
+                      "IN",
+                      "CM"
+                    ],
+                    "description": "Dimension unit."
+                  }
+                }
+              },
+              "customerReferences": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "customerReferenceType",
+                    "value"
+                  ],
+                  "properties": {
+                    "customerReferenceType": {
+                      "type": "string",
+                      "enum": [
+                        "CUSTOMER_REFERENCE",
+                        "DEPARTMENT_NUMBER",
+                        "INVOICE_NUMBER",
+                        "P_O_NUMBER",
+                        "INTRACOUNTRY_REGULATORY_REFERENCE",
+                        "RMA_ASSOCIATION"
+                      ],
+                      "description": "Reference kind."
+                    },
+                    "value": {
+                      "type": "string",
+                      "description": "Reference value."
+                    }
+                  }
+                },
+                "description": "References printed on the label."
+              }
+            }
+          }
+        },
+        "customsClearanceDetail": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Customs data for international shipments.",
+          "properties": {
+            "dutiesPayment": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "paymentType"
+              ],
+              "properties": {
+                "paymentType": {
+                  "type": "string",
+                  "enum": [
+                    "SENDER",
+                    "RECIPIENT",
+                    "THIRD_PARTY",
+                    "COLLECT"
+                  ],
+                  "description": "Who pays duties."
+                }
+              }
+            },
+            "commercialInvoice": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Commercial invoice details.",
+              "properties": {
+                "shipmentPurpose": {
+                  "type": "string",
+                  "enum": [
+                    "GIFT",
+                    "NOT_SOLD",
+                    "PERSONAL_EFFECTS",
+                    "REPAIR_AND_RETURN",
+                    "SAMPLE",
+                    "SOLD"
+                  ],
+                  "description": "Why the goods are shipped."
+                },
+                "termsOfSale": {
+                  "type": "string",
+                  "description": "Incoterm, for example DAP or DDP."
+                },
+                "specialInstructions": {
+                  "type": "string",
+                  "description": "Free text instructions."
+                }
+              }
+            },
+            "totalCustomsValue": {
+              "$ref": "#/definitions/money",
+              "description": "Total declared customs value."
+            },
+            "commodities": {
+              "type": "array",
+              "description": "Goods being shipped, one entry per kind of item.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "description"
+                ],
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Description of the goods."
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of units."
+                  },
+                  "quantityUnits": {
+                    "type": "string",
+                    "description": "Unit of the quantity, for example PCS."
+                  },
+                  "unitPrice": {
+                    "$ref": "#/definitions/money",
+                    "description": "Value of one unit."
+                  },
+                  "customsValue": {
+                    "$ref": "#/definitions/money",
+                    "description": "Total value of this commodity line."
+                  },
+                  "weight": {
+                    "$ref": "#/definitions/weight",
+                    "description": "Weight of this commodity line."
+                  },
+                  "harmonizedCode": {
+                    "type": "string",
+                    "description": "HS tariff code."
+                  },
+                  "countryOfManufacture": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "description": "ISO country code where the goods were made."
+                  }
+                }
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "commercialInvoice",
+            "commodities"
+          ]
+        }
+      }
+    }
+  }
+}
