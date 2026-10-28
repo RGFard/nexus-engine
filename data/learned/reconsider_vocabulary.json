@@ -126,21 +126,215 @@
     "sourceSystem": "SAP/ERP"
   },
   {
-    "id": "541dce07bbd8",
     "sourceField": "/items[]/unitPrice",
     "targetField": "/packages[]/declaredValue/amount",
-    "transformation": "direct",
-    "confidence": 0.78,
-    "reasoning": "(original AI reasoning not retained — migrated from the 2026-10-08 pending cleanup)",
+    "transformation": "direct|cast:number",
+    "confidence": 0.75,
+    "reasoning": "Unit price per item serves as declared value for customs/insurance purposes.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "541dce07bbd8",
+    "firstSeenAt": "2026-10-08T23:42:45.333Z",
+    "lastSeenAt": "2026-10-18T03:19:51.839Z",
+    "seenCount": 5,
+    "sourceSystem": "ShipStation",
+    "reason": "A line item's unit price is not a package's declared value (rejected before too).",
+    "rejectedAt": "2026-10-28T06:27:56.559Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/CustomerReferences",
+    "targetField": "/packages[]/packageId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "Customer references for a package serve as the client-assigned package identifier within the shipment.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "2d266354b703",
+    "firstSeenAt": "2026-10-08T23:00:45.827Z",
+    "lastSeenAt": "2026-10-28T05:29:21.209Z",
+    "seenCount": 4,
+    "sourceSystem": "DHL",
+    "reason": "Conflict: this source field went to /identifiers/clientReferenceId instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.501Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/Description",
+    "targetField": "/customs/contentsDescription",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Commodity description from international detail; maps to customs contents summary description.",
     "context": {
       "targetSchemaId": "canonical://shipment/shipment-create-request"
     },
-    "firstSeenAt": "2026-10-08T00:00:00.000Z",
-    "lastSeenAt": "2026-10-08T00:00:00.000Z",
+    "id": "6e7735c8bcba",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
     "seenCount": 1,
-    "reason": "Rejected outright, not a conflict — a line item's unit price isn't the same thing as a package's declared value.",
-    "rejectedAt": "2026-10-08T00:00:00.000Z",
-    "selectedTarget": null,
-    "sourceSystem": null
+    "sourceSystem": "DHL",
+    "reason": "Conflict: this source field went to /customs/lineItems[]/description instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.521Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/ShipmentInfo/Currency",
+    "targetField": "/customs/lineItems[]/unitValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Currency from shipment info applies to customs line items; normalize to uppercase ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "0fafb64efda8",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-08T23:40:31.160Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Conflict: this source field went to /customs/declaredValue/currency instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.530Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/ExportDeclaration/InvoiceDate",
+    "targetField": "/metadata/updatedAt",
+    "transformation": "date:iso8601",
+    "confidence": 0.6,
+    "reasoning": "Invoice date serves as a temporal marker; mapped to metadata updatedAt as best available timestamp field. Low confidence due to semantic mismatch (invoice date is not update timestamp), but no better target exists.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "04a2769996b0",
+    "firstSeenAt": "2026-10-08T23:40:31.160Z",
+    "lastSeenAt": "2026-10-28T05:29:21.209Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL",
+    "reason": "An invoice date is not when the record was updated.",
+    "rejectedAt": "2026-10-28T06:27:56.540Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/DeclaredValueCurrecyCode",
+    "targetField": "/customs/declaredValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "confidence": 0.85,
+    "reasoning": "Shipment currency is also the customs declaration currency. Maps to customs declaredValue currency. Normalize to ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "2c04436d5915",
+    "firstSeenAt": "2026-10-09T00:03:39.795Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Conflict: this source field went to /packages[]/declaredValue/currency instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.574Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/RequestedShipment/InternationalDetail/Commodities/CustomsValue",
+    "targetField": "/customs/lineItems[]/unitValue/amount",
+    "transformation": "direct|cast:number",
+    "confidence": 0.85,
+    "reasoning": "CustomsValue represents per-unit value in customs context. Maps to lineItems unitValue amount.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "0acfb14b84dc",
+    "firstSeenAt": "2026-10-09T00:03:39.795Z",
+    "lastSeenAt": "2026-10-09T00:03:39.795Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Conflict: this source field went to /customs/declaredValue/amount instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.579Z"
+  },
+  {
+    "sourceField": "/content/packages[]/customerReferences[]/value",
+    "targetField": "/packages[]/packageId",
+    "transformation": "array:first|cast:string",
+    "confidence": 0.75,
+    "reasoning": "Customer reference value is client-assigned package identifier; use first reference as packageId",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "04804113e9f5",
+    "firstSeenAt": "2026-10-28T05:42:41.139Z",
+    "lastSeenAt": "2026-10-28T05:49:30.209Z",
+    "seenCount": 3,
+    "sourceSystem": null,
+    "reason": "A package reference is not a package ID.",
+    "rejectedAt": "2026-10-28T06:27:56.700Z"
+  },
+  {
+    "sourceField": "/content/declaredValueCurrency",
+    "targetField": "/customs/lineItems[]/unitValue/currency",
+    "transformation": "normalize:currency|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Currency from declared value applies to customs line items. Normalize to uppercase ISO 4217.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "0e95298c3fe1",
+    "firstSeenAt": "2026-10-28T05:46:26.781Z",
+    "lastSeenAt": "2026-10-28T05:46:26.781Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "Conflict: this source field went to /customs/declaredValue/currency instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.730Z"
+  },
+  {
+    "sourceField": "/plannedShippingDateAndTime",
+    "targetField": "/metadata/createdAt",
+    "transformation": "date:iso8601",
+    "confidence": 0.65,
+    "reasoning": "Planned shipping date is closest temporal metadata match; normalize ISO 8601 timestamp for createdAt field",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "d23c445bc1ef",
+    "firstSeenAt": "2026-10-28T05:46:26.781Z",
+    "lastSeenAt": "2026-10-28T05:49:30.209Z",
+    "seenCount": 2,
+    "sourceSystem": null,
+    "reason": "The planned ship time is not the creation time; canonical has no ship-date field.",
+    "rejectedAt": "2026-10-28T06:27:56.734Z"
+  },
+  {
+    "sourceField": "/content/declaredValue",
+    "targetField": "/packages[]/declaredValue/amount",
+    "transformation": "array:first|cast:number",
+    "confidence": 0.8,
+    "reasoning": "Declared value at content level maps to first package's declared value amount. Assume single package or apply to primary package.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "c2fdcdfd7e99",
+    "firstSeenAt": "2026-10-28T05:46:26.781Z",
+    "lastSeenAt": "2026-10-28T05:46:26.781Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "Conflict: this source field went to /customs/declaredValue/amount instead (seen more often).",
+    "rejectedAt": "2026-10-28T06:27:56.738Z"
+  },
+  {
+    "sourceField": "/content/unitOfMeasurement",
+    "targetField": "/packages[]/weight/unit",
+    "transformation": "constant:\"kg\"|cast:string",
+    "confidence": 0.7,
+    "reasoning": "Unit of measurement 'metric' from content; default to kg for shipment-level weight unit (requires normalization logic in transform)",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "b3fb4c56617a",
+    "firstSeenAt": "2026-10-28T05:49:30.209Z",
+    "lastSeenAt": "2026-10-28T05:49:30.209Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "Fixed kg is wrong for imperial; the unit-system synthesizer handles this field.",
+    "rejectedAt": "2026-10-28T06:27:56.746Z"
   }
 ]
