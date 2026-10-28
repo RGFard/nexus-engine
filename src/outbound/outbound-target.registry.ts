@@ -133,7 +133,8 @@ function assertPlanShape(plan: SavedOutboundPlan): void {
     }
   }
   for (const [block, needed] of Object.entries(plan.dropIfMissing ?? {})) {
-    if (!block.startsWith("/") || block.includes("[") || typeof needed !== "string" || !needed.startsWith(`${block}/`)) {
+    const inside = typeof needed === "string" && (needed.startsWith(`${block}/`) || needed.startsWith(`${block}[`));
+    if (!block.startsWith("/") || block.includes("[") || !inside) {
       throw new Error(`Plan dropIfMissing "${block}" needs a plain object path and a path inside it`);
     }
   }

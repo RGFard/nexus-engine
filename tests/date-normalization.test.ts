@@ -220,3 +220,10 @@ describe("carrier delivery date transformation", () => {
     assert.equal(execution.validation?.valid, true);
   });
 });
+
+describe("DHL MyDHL GMT date-time", () => {
+  it("reads 2026-10-29T10:00:00 GMT-07:00 with or without the space", () => {
+    assert.equal(toCanonicalDateTimeString("2026-10-29T10:00:00 GMT-07:00"), "2026-10-29T17:00:00.000Z");
+    assert.equal(toCanonicalDateTimeString("2019-08-04T14:00:31GMT+01:00"), "2019-08-04T13:00:31.000Z");
+  });
+});

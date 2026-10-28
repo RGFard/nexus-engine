@@ -52,7 +52,9 @@ export function explainTargetErrors(
   plan: SavedOutboundPlan,
   targetName: string,
 ): ExplainedTargetError[] {
-  return errors.map((e) => {
+  // An if/then rule reports both the inner error (e.g. a missing field) and "must match
+  // then schema"; the second adds nothing for the caller.
+  return errors.filter((e) => e.keyword !== "if").map((e) => {
     const missing = e.keyword === "required" ? (e.params as { missingProperty?: string }).missingProperty : undefined;
     const failingPath = missing ? `${e.instancePath}/${missing}` : e.instancePath;
 

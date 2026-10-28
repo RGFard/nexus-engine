@@ -20,7 +20,7 @@ import {
   setByPath,
 } from "../utils/json-path.js";
 import { applyCanonicalDefaults } from "../utils/canonical-defaults.js";
-import { inheritTotalWeightUnit } from "../utils/weight-unit-inheritance.js";
+import { fillUnitsFromSystem, inheritTotalWeightUnit } from "../utils/weight-unit-inheritance.js";
 import { applyTransformationSteps } from "./transformation-engine.js";
 import type { SchemaValidationService } from "../../services/schema-validation.service.js";
 import type { LocationRegistry, OriginResolution } from "./location-registry.service.js";
@@ -134,6 +134,12 @@ export class TransformationExecutorService implements TransformationExecutor {
     );
 
     pruneIncompleteMoneyObjects(targetPayload);
+
+    // Bare weights and dimensions take their unit from a shipment-level unit system (DHL).
+    if (isPlainObject(targetPayload)) {
+      const filledUnits = fillUnitsFromSystem(targetPayload);
+      if (filledUnits > 0) log.info({ filledUnits }, "Units filled from the shipment unit system");
+    }
 
     // A total weight sent as a bare number (FedEx totalWeight) takes its unit from the packages.
     if (isPlainObject(targetPayload)) {

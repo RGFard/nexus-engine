@@ -1,3 +1,4 @@
+import { getByPath } from "../utils/json-path.js";
 import { createHash } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { loadAiConfig } from "../config.js";
@@ -262,6 +263,11 @@ export class AiMappingService {
     // Synthesize mappings for reference-only origin indicators (e.g. warehouseId → extensions.originRef)
     // that have no heuristic or AI candidate because their target (/extensions) is a dynamic bucket.
     mappings = synthesizeReferenceExtensions(mappings, sourceAnalysis, targetAnalysis);
+
+    // A shipment-level unit system (DHL MyDHL content.unitOfMeasurement: "metric") is
+    // kept as extensions.unitSystem; the executor then fills the kg/lb and cm/in units
+    // that bare package weights and dimensions leave out.
+    mappings = synthesizeUnitSystemExtensions(mappings, sourceAnalysis, targetAnalysis, request.sourceExamplePayload);
 
     // Carrier parcel conventions: some source fields (e.g. EasyPost's /parcel/weight,
     // /parcel/height, /parcel/length, /parcel/width) are implicitly in a fixed unit with
@@ -803,6 +809,40 @@ const ORIGIN_REF_PATTERNS: Array<{
       "stored as extensions.originRef for downstream resolution into a full address.",
   },
 ];
+
+const UNIT_SYSTEMS = new Set(["metric", "imperial"]);
+
+function synthesizeUnitSystemExtensions(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+  targetAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+  examplePayload: unknown,
+): FieldMapping[] {
+  if (!targetAnalysis.fields.some((f) => f.path === "/extensions")) return mappings;
+
+  const added: FieldMapping[] = [];
+  for (const sf of sourceAnalysis.fields) {
+    // Shipment level only: a unit system inside a list item is about that item.
+    if (sf.kind === "object" || sf.path.includes("[]")) continue;
+    const example = sf.exampleValue ?? getByPath(examplePayload, sf.path);
+    if (typeof example !== "string" || !UNIT_SYSTEMS.has(example.trim().toLowerCase())) continue;
+    if (/\/(weight|dimensions?)\//i.test(sf.path)) continue;
+    const key = /dimension/i.test(sf.name) ? "dimensionUnitSystem" : "unitSystem";
+    if (mappings.some((m) => m.sourceField === sf.path && m.targetField === "/extensions")) continue;
+    added.push({
+      sourceField: sf.path,
+      targetField: "/extensions",
+      confidence: 0.9,
+      transformation: `cast:string|normalize:lowercase|wrap:${key}`,
+      reasoning: `Shipment-level unit system (${example}); fills the units of bare weights and dimensions.`,
+    });
+  }
+
+  if (added.length > 0) {
+    log.info({ synthesized: added.map((m) => m.sourceField) }, "Unit-system mappings synthesized");
+  }
+  return [...mappings, ...added];
+}
 
 function synthesizeReferenceExtensions(
   mappings: FieldMapping[],

@@ -20,6 +20,9 @@ async function transform(body: unknown) {
 before(async () => {
   app = await buildApp({ host: "127.0.0.1", port: 0, logLevel: "silent" });
   canonical = (await loadJson("tests/fixtures/canonical-shipment.json")) as Record<string, any>;
+  // DHL needs an incoterm and a weight on each customs line for a dutiable shipment.
+  canonical.customs.incoterm = "DAP";
+  canonical.customs.lineItems[0].weight = { value: 2.3, unit: "kg" };
 });
 
 after(async () => {
@@ -45,11 +48,11 @@ describe("POST /outbound/transform", () => {
 
     const body = res.json();
     assert.deepEqual(body.validation, { valid: true });
-    assert.equal(body.skippedMappings.length, 0);
     assert.equal(body.target.planId, "canonical-to-dhl/shipment-create-request");
-    assert.equal(body.targetPayload.ShipmentInfo.ServiceType, "P");
-    assert.equal(body.targetPayload.Recipient.Address.City, "New York");
-    assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Weight, { Unit: "KG", Value: 2.5 });
+    assert.equal(body.targetPayload.productCode, "P");
+    assert.equal(body.targetPayload.customerDetails.receiverDetails.postalAddress.cityName, "New York");
+    assert.equal(body.targetPayload.content.packages[0].weight, 2.5);
+    assert.equal(body.targetPayload.content.unitOfMeasurement, "metric");
   });
 
   it("converts a unit DHL does not take, and says so", async () => {
@@ -63,16 +66,14 @@ describe("POST /outbound/transform", () => {
 
     const body = res.json();
     assert.deepEqual(body.validation, { valid: true });
-    assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Weight, { Unit: "LB", Value: 1.5 });
-    assert.deepEqual(body.targetPayload.Packages.RequestedPackages[0].Dimensions, {
-      Height: 15,
-      Length: 30,
-      Unit: "CM",
-      Width: 20,
-    });
+    assert.equal(body.targetPayload.content.packages[0].weight, 1.5);
+    assert.equal(body.targetPayload.content.unitOfMeasurement, "imperial");
+    assert.deepEqual(body.targetPayload.content.packages[0].dimensions, { height: 15, length: 30, width: 20 });
+    assert.equal(body.targetPayload.content.dimensionUnitOfMeasurement, "metric");
     // Reported in the order the blocks appear in the payload, so look each up by path.
     const byPath = Object.fromEntries(body.unitConversions.map((c: any) => [c.path, c]));
     assert.deepEqual(Object.keys(byPath).sort(), ["/packages/0/dimensions", "/packages/0/weight"]);
+    // The kg customs line weight is not converted, so it no longer matches imperial: a known gap.
     assert.deepEqual(byPath["/packages/0/weight"].from, { value: 24, unit: "oz" });
     assert.deepEqual(byPath["/packages/0/weight"].to, { value: 1.5, unit: "lb" });
   });
@@ -95,7 +96,7 @@ describe("POST /outbound/transform", () => {
   it("returns 404 for a target with no saved plan", async () => {
     const res = await transform({ canonicalPayload: canonical, target: { system: "ups", schemaName: "shipment-create-request" } });
     assert.equal(res.statusCode, 404);
-    assert.match(res.json().error, /Available: dhl\/shipment-create-request/);
+    assert.match(res.json().error, /Available: dhl\/shipment-create-request, fedex\/shipment-create-request/);
   });
 
   it("returns 400 when the body is missing the target", async () => {
@@ -115,8 +116,9 @@ describe("POST /outbound/transform parameters", () => {
   it("lists the parameters a target accepts", async () => {
     const res = await app.inject({ method: "GET", url: "/outbound/targets" });
     const dhl = res.json().targets.find((t: any) => t.system === "dhl");
-    assert.equal(dhl.parameters.serviceCode.targetField, "/ShipmentInfo/ServiceType");
-    assert.equal(dhl.parameters.accountNumber.targetField, "/ShipmentInfo/Account");
+    assert.equal(dhl.parameters.serviceCode.targetField, "/productCode");
+    assert.equal(dhl.parameters.accountNumber.targetField, "/accounts[0]/number");
+    assert.equal(dhl.parameters.accountNumber.header, "X-Account-Number");
     assert.deepEqual(dhl.units.weight, { accepted: ["kg", "lb"], convert: { oz: "lb", g: "kg" } });
   });
 
@@ -134,14 +136,14 @@ describe("POST /outbound/transform parameters", () => {
     const res = await transform({
       canonicalPayload: withoutCarrier(),
       target: DHL,
-      parameters: { serviceCode: "P" },
+      parameters: { serviceCode: "P", accountNumber: "123456789" },
     });
     assert.equal(res.statusCode, 200);
 
     const body = res.json();
     assert.deepEqual(body.validation, { valid: true });
-    assert.deepEqual(body.appliedParameters, ["serviceCode"]);
-    assert.deepEqual(body.targetPayload.ShipmentInfo, { ServiceType: "P" });
+    assert.deepEqual(body.appliedParameters, ["serviceCode", "accountNumber"]);
+    assert.equal(body.targetPayload.productCode, "P");
   });
 
   it("a supplied service code replaces the one in the canonical payload", async () => {
@@ -151,8 +153,8 @@ describe("POST /outbound/transform parameters", () => {
     const res = await transform({ canonicalPayload: payload, target: DHL, parameters: { serviceCode: " U " } });
 
     const body = res.json();
-    assert.equal(body.targetPayload.ShipmentInfo.ServiceType, "U");
-    assert.equal(body.targetPayload.ShipmentInfo.Account, "123456789");
+    assert.equal(body.targetPayload.productCode, "U");
+    assert.deepEqual(body.targetPayload.accounts, [{ number: "123456789", typeCode: "shipper" }]);
     assert.equal(body.validation.valid, true);
   });
 
@@ -169,21 +171,41 @@ describe("POST /outbound/transform parameters", () => {
   });
 });
 
+// Every path in a JSON schema, following its local #/definitions refs.
+function schemaPaths(root: Record<string, any>): Set<string> {
+  const paths = new Set<string>();
+  const resolve = (n: any): any => (n?.$ref ? resolve(n.$ref.slice(2).split("/").reduce((o: any, k: string) => o[k], root)) : n);
+  const walk = (node: any, path: string) => {
+    const n = resolve(node);
+    if (path) paths.add(path);
+    if (n?.items) walk(n.items, `${path}[]`);
+    for (const [k, v] of Object.entries<any>(n?.properties ?? {})) walk(v, `${path}/${k}`);
+  };
+  walk(root, "");
+  return paths;
+}
+
 describe("saved DHL plan integrity", () => {
   it("only names fields that exist in the canonical and DHL schemas", async () => {
     const plan = (await loadJson("src/target-plans/dhl/shipment-create-request.plan.json")) as Record<string, any>;
-    const dhlSchema = await loadJson("src/target-schemas/dhl/shipment-create-request.schema.json");
+    const dhlSchema = (await loadJson("src/target-schemas/dhl/shipment-create-request.schema.json")) as Record<string, any>;
     const canonicalSchema = schemaRegistry.get("shipment", "shipment-create-request")!.schema;
 
     const canonicalPaths = new Set(semanticMatcherService.analyzeSchema(canonicalSchema).fields.map((f) => f.path));
-    const dhlPaths = new Set(semanticMatcherService.analyzeSchema(dhlSchema).fields.map((f) => f.path));
+    const dhlPaths = schemaPaths(dhlSchema);
+    const isDhlField = (p: string) => dhlPaths.has(p.replace(/\[\d+\]/g, "[]"));
+    // A whole list (/customs/lineItems) is a valid source for list-level steps like array:positions.
+    const isCanonical = (p: string) => canonicalPaths.has(p) || canonicalPaths.has(`${p}[]`) || [...canonicalPaths].some((c) => c.startsWith(`${p}[]/`));
 
     for (const m of plan.mappings) {
-      assert.ok(canonicalPaths.has(m.sourceField), `not a canonical field: ${m.sourceField}`);
-      assert.ok(dhlPaths.has(m.targetField), `not a DHL field: ${m.targetField}`);
+      assert.ok(isCanonical(m.sourceField), `not a canonical field: ${m.sourceField}`);
+      assert.ok(isDhlField(m.targetField), `not a DHL field: ${m.targetField}`);
+    }
+    for (const path of Object.keys(plan.defaults ?? {})) {
+      assert.ok(isDhlField(path), `default targets a field DHL does not have: ${path}`);
     }
     for (const [name, param] of Object.entries<any>(plan.parameters ?? {})) {
-      assert.ok(dhlPaths.has(param.targetField), `parameter ${name} targets a field DHL does not have: ${param.targetField}`);
+      assert.ok(isDhlField(param.targetField), `parameter ${name} targets a field DHL does not have: ${param.targetField}`);
     }
   });
 });

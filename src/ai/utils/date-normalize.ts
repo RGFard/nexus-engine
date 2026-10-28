@@ -71,6 +71,13 @@ export function parseCarrierDate(value: unknown): Date | undefined {
     return utcDate(Number(isoDateOnly[1]), Number(isoDateOnly[2]), Number(isoDateOnly[3]));
   }
 
+  // DHL MyDHL: 2026-10-29T10:00:00 GMT-07:00 (space optional), which Date cannot read.
+  const gmt = raw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\s*GMT([+-])(\d{2}):?(\d{2})$/i);
+  if (gmt) {
+    const d = new Date(`${gmt[1]}${gmt[2]}${gmt[3]}:${gmt[4]}`);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+
   const parsed = new Date(raw);
   if (!Number.isNaN(parsed.getTime())) {
     return parsed;

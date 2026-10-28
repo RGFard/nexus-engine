@@ -2,6 +2,7 @@ import type { FieldMapping } from "../models/mapping.types.js";
 import {
   normalizeDateForTarget,
   toCanonicalDateString,
+  parseCarrierDate,
   toCanonicalDateTimeString,
 } from "../utils/date-normalize.js";
 import { getByPath } from "../utils/json-path.js";
@@ -292,6 +293,25 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     }
     const swap = (v: unknown) => (v === null || v === undefined ? v : table.get(String(v)));
     return Array.isArray(value) ? value.map(swap) : swap(value);
+  }
+
+  if (step === "date:dhlShipTime") {
+    // DHL wants the hand-over time as 2026-10-28T10:00:00 GMT+00:00, never in the past.
+    // A future date in the source is kept; anything else (missing, past, "now") becomes now.
+    const parsed = typeof value === "string" || typeof value === "number" ? parseCarrierDate(value) : undefined;
+    const now = new Date();
+    const when = parsed && !Number.isNaN(parsed.getTime()) && parsed > now ? parsed : now;
+    return `${when.toISOString().slice(0, 19)} GMT+00:00`;
+  }
+
+  if (step === "date:today") {
+    // Today's date as YYYY-MM-DD (UTC), e.g. for an invoice dated on the ship day.
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  if (step === "array:positions") {
+    // 1, 2, 3 ... one per item: DHL numbers its customs line items.
+    return Array.isArray(value) ? value.map((_, i) => i + 1) : value;
   }
 
   if (step === "math:ceil") {

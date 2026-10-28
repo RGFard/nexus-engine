@@ -26,3 +26,44 @@ export function inheritTotalWeightUnit(payload: Record<string, unknown>): string
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
+
+const SYSTEM_UNITS: Record<string, { weight: string; dimension: string }> = {
+  metric: { weight: "kg", dimension: "cm" },
+  imperial: { weight: "lb", dimension: "in" },
+};
+
+/**
+ * Some carriers send bare numbers for weights and dimensions and name the unit system
+ * once for the whole shipment (DHL MyDHL: unitOfMeasurement "metric"). The mapper keeps
+ * that as extensions.unitSystem (and extensions.dimensionUnitSystem when dimensions use
+ * another system). Every weight or dimensions block that has values but no unit gets
+ * kg/lb or cm/in from it. Blocks with a unit are left alone. Returns how many were filled.
+ */
+export function fillUnitsFromSystem(payload: Record<string, unknown>): number {
+  const ext = isObject(payload.extensions) ? payload.extensions : {};
+  const weightSystem = SYSTEM_UNITS[String(ext.unitSystem ?? "").toLowerCase()];
+  const dimensionSystem = SYSTEM_UNITS[String(ext.dimensionUnitSystem ?? ext.unitSystem ?? "").toLowerCase()];
+  if (!weightSystem && !dimensionSystem) return 0;
+
+  let filled = 0;
+  const visit = (node: unknown, key: string | undefined): void => {
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, undefined));
+      return;
+    }
+    if (!isObject(node)) return;
+    const noUnit = typeof node.unit !== "string" || node.unit.length === 0;
+    if (key === "weight" && weightSystem && noUnit && node.value !== undefined && node.value !== null) {
+      node.unit = weightSystem.weight;
+      filled += 1;
+    } else if (key === "dimensions" && dimensionSystem && noUnit && ["length", "width", "height"].some((f) => node[f] !== undefined)) {
+      node.unit = dimensionSystem.dimension;
+      filled += 1;
+    }
+    for (const [k, v] of Object.entries(node)) {
+      if (k !== "extensions") visit(v, k);
+    }
+  };
+  visit(payload, undefined);
+  return filled;
+}

@@ -1,264 +1,471 @@
 {
   "planId": "canonical-to-dhl/shipment-create-request",
-  "planVersion": "1.0.0",
-  "description": "Fixed outbound plan: canonical shipment-create-request to the DHL shipment request. Written by hand as the reverse of the inbound DHL mappings, so it runs without the heuristic or AI.",
+  "planVersion": "2.0.0",
+  "description": "Fixed outbound plan: canonical shipment-create-request to the DHL Express MyDHL API 3.4.0 create-shipment request. Written by hand, so it runs without the heuristic or AI.",
   "targetName": "DHL",
   "sourceSchemaId": "canonical://shipment/shipment-create-request",
   "targetSchemaId": "target://dhl/shipment-create-request",
   "mappings": [
     {
       "sourceField": "/metadata/createdAt",
-      "targetField": "/ShipmentCreationDate",
+      "targetField": "/plannedShippingDateAndTime",
       "confidence": 1,
-      "transformation": "date:iso8601",
-      "reasoning": "Shipment creation timestamp."
-    },
-    {
-      "sourceField": "/customs/declaredValue/currency",
-      "targetField": "/DeclaredValueCurrecyCode",
-      "confidence": 1,
-      "transformation": "normalize:currency|cast:string",
-      "reasoning": "Currency of the declared value. DHL spells the field Currecy."
-    },
-    {
-      "sourceField": "/carrier/accountNumber",
-      "targetField": "/ShipmentInfo/Account",
-      "confidence": 1,
-      "transformation": "direct|cast:string",
-      "reasoning": "Carrier billing account."
+      "transformation": "constant:now|date:dhlShipTime",
+      "reasoning": "Hand-over time: now, in DHL's GMT format. DHL rejects a date in the past."
     },
     {
       "sourceField": "/carrier/serviceCode",
-      "targetField": "/ShipmentInfo/ServiceType",
+      "targetField": "/productCode",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Carrier product code, passed through as is. Only correct when the code is already a DHL code."
+      "reasoning": "DHL global product code, e.g. P."
     },
     {
-      "sourceField": "/origin/name",
-      "targetField": "/Shipper/Contact/PersonName",
+      "sourceField": "/carrier/accountNumber",
+      "targetField": "/accounts[0]/number",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Sender contact person."
-    },
-    {
-      "sourceField": "/origin/company",
-      "targetField": "/Shipper/Contact/CompanyName",
-      "confidence": 1,
-      "transformation": "direct|cast:string",
-      "reasoning": "Sender company."
-    },
-    {
-      "sourceField": "/origin/phone",
-      "targetField": "/Shipper/Contact/PhoneNumber",
-      "confidence": 1,
-      "transformation": "direct|cast:string",
-      "reasoning": "Sender phone."
-    },
-    {
-      "sourceField": "/origin/email",
-      "targetField": "/Shipper/Contact/EmailAddress",
-      "confidence": 1,
-      "transformation": "direct|cast:string",
-      "reasoning": "Sender email."
+      "reasoning": "Shipper's DHL account number."
     },
     {
       "sourceField": "/origin/line1",
-      "targetField": "/Shipper/Address/StreetLines",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/addressLine1",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Sender street, first line only."
+      "reasoning": "Shipper address line 1."
+    },
+    {
+      "sourceField": "/origin/line2",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/addressLine2",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper address line 2."
+    },
+    {
+      "sourceField": "/origin/line3",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/addressLine3",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper address line 3."
     },
     {
       "sourceField": "/origin/city",
-      "targetField": "/Shipper/Address/City",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/cityName",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Sender city."
+      "reasoning": "Shipper city."
+    },
+    {
+      "sourceField": "/origin/stateOrProvince",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/provinceCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper state or province code."
     },
     {
       "sourceField": "/origin/postalCode",
-      "targetField": "/Shipper/Address/PostalCode",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/postalCode",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Sender postal code."
+      "reasoning": "Shipper postal code."
     },
     {
       "sourceField": "/origin/countryCode",
-      "targetField": "/Shipper/Address/CountryCode",
+      "targetField": "/customerDetails/shipperDetails/postalAddress/countryCode",
       "confidence": 1,
       "transformation": "direct|normalize:countryCode|cast:string",
-      "reasoning": "Sender country code."
+      "reasoning": "Shipper country code."
     },
     {
-      "sourceField": "/destination/name",
-      "targetField": "/Recipient/Contact/PersonName",
+      "sourceField": "/origin/phone",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/phone",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Receiver contact person."
+      "reasoning": "Shipper phone, required by DHL."
     },
     {
-      "sourceField": "/destination/company",
-      "targetField": "/Recipient/Contact/CompanyName",
+      "sourceField": "/origin/email",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/email",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Receiver company."
+      "reasoning": "Shipper email."
     },
     {
-      "sourceField": "/destination/phone",
-      "targetField": "/Recipient/Contact/PhoneNumber",
+      "sourceField": "/origin/name",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/companyName",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Receiver phone."
+      "reasoning": "Shipper company name falls back to the contact name (DHL requires a company name)."
     },
     {
-      "sourceField": "/destination/email",
-      "targetField": "/Recipient/Contact/EmailAddress",
+      "sourceField": "/origin/company",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/companyName",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Receiver email."
+      "reasoning": "Shipper company name."
+    },
+    {
+      "sourceField": "/origin/company",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/fullName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper contact name falls back to the company name (DHL requires a full name)."
+    },
+    {
+      "sourceField": "/origin/name",
+      "targetField": "/customerDetails/shipperDetails/contactInformation/fullName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper contact name."
     },
     {
       "sourceField": "/destination/line1",
-      "targetField": "/Recipient/Address/StreetLines",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/addressLine1",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Receiver street, first line only."
+      "reasoning": "Receiver address line 1."
+    },
+    {
+      "sourceField": "/destination/line2",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/addressLine2",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver address line 2."
+    },
+    {
+      "sourceField": "/destination/line3",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/addressLine3",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver address line 3."
     },
     {
       "sourceField": "/destination/city",
-      "targetField": "/Recipient/Address/City",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/cityName",
       "confidence": 1,
       "transformation": "direct|cast:string",
       "reasoning": "Receiver city."
     },
     {
+      "sourceField": "/destination/stateOrProvince",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/provinceCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver state or province code."
+    },
+    {
       "sourceField": "/destination/postalCode",
-      "targetField": "/Recipient/Address/PostalCode",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/postalCode",
       "confidence": 1,
       "transformation": "direct|cast:string",
       "reasoning": "Receiver postal code."
     },
     {
       "sourceField": "/destination/countryCode",
-      "targetField": "/Recipient/Address/CountryCode",
+      "targetField": "/customerDetails/receiverDetails/postalAddress/countryCode",
       "confidence": 1,
       "transformation": "direct|normalize:countryCode|cast:string",
       "reasoning": "Receiver country code."
     },
     {
-      "sourceField": "/packages[]/weight/value",
-      "targetField": "/Packages/RequestedPackages[]/Weight/Value",
+      "sourceField": "/destination/phone",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/phone",
       "confidence": 1,
-      "transformation": "array:map|cast:number",
-      "reasoning": "Package weight."
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver phone, required by DHL."
     },
     {
-      "sourceField": "/packages[]/weight/unit",
-      "targetField": "/Packages/RequestedPackages[]/Weight/Unit",
+      "sourceField": "/destination/email",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/email",
       "confidence": 1,
-      "transformation": "array:map|cast:string|normalize:uppercase",
-      "reasoning": "Package weight unit. Already converted to a unit DHL takes (see units), then sent in capitals."
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver email."
+    },
+    {
+      "sourceField": "/destination/name",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/companyName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver company name falls back to the contact name (DHL requires a company name)."
+    },
+    {
+      "sourceField": "/destination/company",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/companyName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver company name."
+    },
+    {
+      "sourceField": "/destination/company",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/fullName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver contact name falls back to the company name (DHL requires a full name)."
+    },
+    {
+      "sourceField": "/destination/name",
+      "targetField": "/customerDetails/receiverDetails/contactInformation/fullName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Receiver contact name."
+    },
+    {
+      "sourceField": "/packages[]/weight/value",
+      "targetField": "/content/packages[]/weight",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Package weight, in the unit named by unitOfMeasurement."
     },
     {
       "sourceField": "/packages[]/dimensions/length",
-      "targetField": "/Packages/RequestedPackages[]/Dimensions/Length",
+      "targetField": "/content/packages[]/dimensions/length",
       "confidence": 1,
       "transformation": "array:map|cast:number",
       "reasoning": "Package length."
     },
     {
       "sourceField": "/packages[]/dimensions/width",
-      "targetField": "/Packages/RequestedPackages[]/Dimensions/Width",
+      "targetField": "/content/packages[]/dimensions/width",
       "confidence": 1,
       "transformation": "array:map|cast:number",
       "reasoning": "Package width."
     },
     {
       "sourceField": "/packages[]/dimensions/height",
-      "targetField": "/Packages/RequestedPackages[]/Dimensions/Height",
+      "targetField": "/content/packages[]/dimensions/height",
       "confidence": 1,
       "transformation": "array:map|cast:number",
       "reasoning": "Package height."
     },
     {
-      "sourceField": "/packages[]/dimensions/unit",
-      "targetField": "/Packages/RequestedPackages[]/Dimensions/Unit",
+      "sourceField": "/packages[]/description",
+      "targetField": "/content/packages[]/description",
       "confidence": 1,
-      "transformation": "array:map|cast:string|normalize:uppercase",
-      "reasoning": "Package dimension unit. Already converted to a unit DHL takes (see units), then sent in capitals."
+      "transformation": "array:map|cast:string",
+      "reasoning": "Package contents."
+    },
+    {
+      "sourceField": "/packages[]/weight/unit",
+      "targetField": "/content/unitOfMeasurement",
+      "confidence": 1,
+      "transformation": "array:first|lookup:kg=metric,lb=imperial",
+      "reasoning": "Weight unit system: kg is metric, lb is imperial."
+    },
+    {
+      "sourceField": "/packages[]/dimensions/unit",
+      "targetField": "/content/dimensionUnitOfMeasurement",
+      "confidence": 1,
+      "transformation": "array:first|lookup:cm=metric,in=imperial",
+      "reasoning": "Dimension unit system: cm is metric, in is imperial."
     },
     {
       "sourceField": "/identifiers/clientReferenceId",
-      "targetField": "/Packages/RequestedPackages[]/CustomerReferences",
+      "targetField": "/content/packages[]/customerReferences[0]/value",
       "confidence": 1,
       "transformation": "direct|cast:string",
-      "reasoning": "Client reference, carried on the package."
+      "reasoning": "Client reference on every package."
     },
     {
-      "sourceField": "/customs/declaredValue/amount",
-      "targetField": "/InternationalDetail/ExportDeclaration/InvoiceTotal",
+      "sourceField": "/identifiers/clientReferenceId",
+      "targetField": "/content/packages[]/customerReferences[0]/typeCode",
       "confidence": 1,
-      "transformation": "direct|cast:number",
-      "reasoning": "Total declared value of the shipment."
+      "transformation": "replace:CU",
+      "reasoning": "CU is DHL's customer reference type."
     },
     {
-      "sourceField": "/customs/declaredValue/amount",
-      "targetField": "/InternationalDetail/Commodities/CustomsValue",
+      "sourceField": "/packages[]/description",
+      "targetField": "/content/description",
       "confidence": 1,
-      "transformation": "direct|cast:number",
-      "reasoning": "Total declared value. DHL has one Commodities block, so it carries the shipment total."
+      "transformation": "array:first|cast:string",
+      "reasoning": "Shipment description falls back to the first package description."
     },
     {
       "sourceField": "/customs/lineItems[]/description",
-      "targetField": "/InternationalDetail/Commodities/Description",
+      "targetField": "/content/description",
       "confidence": 1,
       "transformation": "array:first|cast:string",
-      "reasoning": "Goods description, first line item."
+      "reasoning": "Shipment description falls back to the first customs line description."
     },
     {
-      "sourceField": "/customs/lineItems[]/quantity",
-      "targetField": "/InternationalDetail/Commodities/Quantity",
+      "sourceField": "/customs/contentsDescription",
+      "targetField": "/content/description",
       "confidence": 1,
-      "transformation": "array:first|cast:number",
-      "reasoning": "Quantity, first line item."
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipment contents description."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/description",
+      "targetField": "/content/isCustomsDeclarable",
+      "confidence": 1,
+      "transformation": "array:first|replace:true",
+      "reasoning": "Customs line items mean a dutiable shipment."
+    },
+    {
+      "sourceField": "/customs/declaredValue/amount",
+      "targetField": "/content/declaredValue",
+      "confidence": 1,
+      "transformation": "direct|cast:number",
+      "reasoning": "Declared customs value."
+    },
+    {
+      "sourceField": "/customs/declaredValue/currency",
+      "targetField": "/content/declaredValueCurrency",
+      "confidence": 1,
+      "transformation": "direct|cast:string|normalize:currency",
+      "reasoning": "Declared value currency."
+    },
+    {
+      "sourceField": "/customs/incoterm",
+      "targetField": "/content/incoterm",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Incoterm for the shipment."
+    },
+    {
+      "sourceField": "/customs/lineItems",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/number",
+      "confidence": 1,
+      "transformation": "array:positions",
+      "reasoning": "Line numbers 1, 2, 3 in order."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/description",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/description",
+      "confidence": 1,
+      "transformation": "array:map|cast:string",
+      "reasoning": "Line item description."
     },
     {
       "sourceField": "/customs/lineItems[]/unitValue/amount",
-      "targetField": "/InternationalDetail/Commodities/UnitPrice",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/price",
       "confidence": 1,
-      "transformation": "array:first|cast:number",
-      "reasoning": "Unit price, first line item."
+      "transformation": "array:map|cast:number",
+      "reasoning": "Value of one unit."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/quantity",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/quantity/value",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Number of units."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/quantity",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/quantity/unitOfMeasurement",
+      "confidence": 1,
+      "transformation": "replace:PCS",
+      "reasoning": "Quantity is counted in pieces."
     },
     {
       "sourceField": "/customs/lineItems[]/hsCode",
-      "targetField": "/InternationalDetail/Commodities/HarmonizedCode",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/commodityCodes[0]/value",
       "confidence": 1,
-      "transformation": "array:first|cast:string",
-      "reasoning": "HS tariff code, first line item."
+      "transformation": "array:map|cast:string",
+      "reasoning": "HS tariff code."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/hsCode",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/commodityCodes[0]/typeCode",
+      "confidence": 1,
+      "transformation": "replace:outbound",
+      "reasoning": "The HS code is the export (outbound) code."
     },
     {
       "sourceField": "/customs/lineItems[]/countryOfOrigin",
-      "targetField": "/InternationalDetail/Commodities/CountryOfManufacture",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/manufacturerCountry",
       "confidence": 1,
-      "transformation": "array:first|normalize:countryCode|cast:string",
-      "reasoning": "Country of manufacture, first line item."
+      "transformation": "array:map|normalize:countryCode|cast:string",
+      "reasoning": "Country where the goods were made."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/weight/value",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/weight/netValue",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Line item weight as net weight."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/weight/value",
+      "targetField": "/content/exportDeclarations[0]/lineItems[]/weight/grossValue",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Line item weight as gross weight."
+    },
+    {
+      "sourceField": "/customs/incoterm",
+      "targetField": "/content/exportDeclarations[0]/incoterm",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Incoterm for the export declaration, required by DHL."
+    },
+    {
+      "sourceField": "/customs/contentsType",
+      "targetField": "/content/exportDeclarations[0]/exportReasonType",
+      "confidence": 1,
+      "transformation": "lookup:merchandise=commercial_purpose_or_sale,gift=gift,sample=sample,returned_goods=return",
+      "reasoning": "Why the goods are exported."
+    },
+    {
+      "sourceField": "/identifiers/shipmentId",
+      "targetField": "/content/exportDeclarations[0]/invoice/number",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Invoice number falls back to shipmentId."
+    },
+    {
+      "sourceField": "/identifiers/orderId",
+      "targetField": "/content/exportDeclarations[0]/invoice/number",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Invoice number falls back to orderId."
+    },
+    {
+      "sourceField": "/identifiers/clientReferenceId",
+      "targetField": "/content/exportDeclarations[0]/invoice/number",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Invoice number falls back to clientReferenceId."
+    },
+    {
+      "sourceField": "/identifiers/invoiceNumber",
+      "targetField": "/content/exportDeclarations[0]/invoice/number",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Invoice number ."
+    },
+    {
+      "sourceField": "/customs/lineItems",
+      "targetField": "/content/exportDeclarations[0]/invoice/date",
+      "confidence": 1,
+      "transformation": "constant:now|date:today",
+      "reasoning": "Invoice dated on the ship day."
     }
   ],
   "unmappedSourceFields": [],
   "unmappedTargetFields": [
-    "/InternationalDetail/Content"
+    "/customerReferences",
+    "/localProductCode"
   ],
+  "dropIfMissing": {
+    "/content/exportDeclarations": "/content/exportDeclarations[0]/lineItems"
+  },
+  "defaults": {
+    "/pickup/isRequested": false,
+    "/accounts[0]/typeCode": "shipper",
+    "/content/isCustomsDeclarable": false,
+    "/content/description": "General goods",
+    "/outputImageProperties/encodingFormat": "pdf"
+  },
   "parameters": {
     "serviceCode": {
-      "targetField": "/ShipmentInfo/ServiceType",
-      "description": "DHL product code to ship with, e.g. P for Express Worldwide. Send it when the shipment did not come from DHL: other sources carry no service code, or carry another carrier's code. When given, it replaces /carrier/serviceCode.",
-      "header": "X-Service-Code"
+      "targetField": "/productCode",
+      "header": "X-Service-Code",
+      "description": "DHL product code to ship with, e.g. P for Express Worldwide or N for domestic. Send it when the shipment did not come from DHL. When given, it replaces /carrier/serviceCode."
     },
     "accountNumber": {
-      "targetField": "/ShipmentInfo/Account",
-      "description": "DHL account to bill. Send it when the source carries no DHL account number. When given, it replaces /carrier/accountNumber.",
-      "header": "X-Account-Number"
+      "targetField": "/accounts[0]/number",
+      "header": "X-Account-Number",
+      "description": "DHL account to bill. Send it when the source carries no DHL account number. When given, it replaces /carrier/accountNumber."
     }
   },
   "units": {
@@ -283,9 +490,11 @@
     }
   },
   "knownGaps": [
-    "/InternationalDetail/Content is not mapped. It needs the reverse of normalize:contentsType (merchandise to NON_DOCUMENTS).",
-    "/carrier/serviceCode is passed through unchanged unless the request supplies the serviceCode parameter. Without it, a UPS or FedEx code goes to DHL as is, and a source with no service code fails the DHL schema.",
-    "DHL has a single Commodities block, so only the first customs line item is sent.",
-    "Address line2, line3 and stateOrProvince are not sent. The DHL schema has no fields for them yet."
+    "unitOfMeasurement comes from the first package. Packages or customs lines in a different unit system (kg next to lb) are sent as is and DHL reads them wrongly.",
+    "plannedShippingDateAndTime is the time of the request in UTC unless the source carries a future ship date; a pickup time is not booked.",
+    "/carrier/serviceCode is passed through unchanged unless the serviceCode parameter is sent, so another carrier's code reaches DHL as is.",
+    "A dutiable shipment needs customs line items with countryOfOrigin and weight, an incoterm, and some identifier for the invoice number.",
+    "The content description is the customs contents description, else the first customs line description, else the first package description, else \"General goods\". DHL caps it at 70 printable ASCII characters and the plan does not shorten it.",
+    "Only clientReferenceId is sent as a reference."
   ]
 }

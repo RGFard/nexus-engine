@@ -1,0 +1,101 @@
+{
+  "plannedShippingDateAndTime": "2026-10-29T10:00:00 GMT-07:00",
+  "pickup": {
+    "isRequested": false
+  },
+  "productCode": "P",
+  "accounts": [
+    {
+      "typeCode": "shipper",
+      "number": "123456789"
+    }
+  ],
+  "outputImageProperties": {
+    "encodingFormat": "pdf"
+  },
+  "customerDetails": {
+    "shipperDetails": {
+      "postalAddress": {
+        "postalCode": "10115",
+        "cityName": "Berlin",
+        "countryCode": "DE",
+        "addressLine1": "Hauptstrasse 5"
+      },
+      "contactInformation": {
+        "phone": "+49 30 1234567",
+        "companyName": "Export GmbH",
+        "fullName": "Anna Schmidt",
+        "email": "anna@export.de"
+      }
+    },
+    "receiverDetails": {
+      "postalAddress": {
+        "postalCode": "10001",
+        "cityName": "New York",
+        "countryCode": "US",
+        "provinceCode": "NY",
+        "addressLine1": "456 Customer Ave"
+      },
+      "contactInformation": {
+        "phone": "+1 212 555 0100",
+        "companyName": "Import Inc",
+        "fullName": "John Doe"
+      }
+    }
+  },
+  "content": {
+    "packages": [
+      {
+        "weight": 2.5,
+        "dimensions": {
+          "length": 30,
+          "width": 20,
+          "height": 15
+        },
+        "customerReferences": [
+          {
+            "value": "REF-001",
+            "typeCode": "CU"
+          }
+        ]
+      }
+    ],
+    "isCustomsDeclarable": true,
+    "declaredValue": 150,
+    "declaredValueCurrency": "USD",
+    "exportDeclarations": [
+      {
+        "lineItems": [
+          {
+            "number": 1,
+            "description": "Cotton T-shirts",
+            "price": 15,
+            "quantity": {
+              "value": 10,
+              "unitOfMeasurement": "PCS"
+            },
+            "commodityCodes": [
+              {
+                "typeCode": "outbound",
+                "value": "610910"
+              }
+            ],
+            "manufacturerCountry": "DE",
+            "weight": {
+              "netValue": 2.3,
+              "grossValue": 2.5
+            }
+          }
+        ],
+        "invoice": {
+          "number": "INV-001",
+          "date": "2026-10-29"
+        },
+        "incoterm": "DAP"
+      }
+    ],
+    "description": "Cotton T-shirts",
+    "incoterm": "DAP",
+    "unitOfMeasurement": "metric"
+  }
+}

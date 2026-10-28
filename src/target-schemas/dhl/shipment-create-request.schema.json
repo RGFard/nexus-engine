@@ -1,180 +1,785 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "target://dhl/shipment-create-request",
-  "title": "DhlShipmentCreateRequest",
-  "description": "DHL shipment request, used as an outbound target. Field names come from tests/fixtures/dhl-international-shipment.json. Not a canonical schema: kept outside src/schemas so the registry does not load it.",
+  "title": "DHLExpressShipmentCreateRequest",
+  "description": "DHL Express MyDHL API 3.4.0 create-shipment request (POST /shipments), used as an outbound target. Checked against DHL's official OpenAPI spec. Covers what a basic domestic or international parcel shipment needs; DHL accepts many more optional fields.",
   "x-target-system": "dhl",
-  "x-target-version": "1.0.0",
+  "x-target-version": "2.0.0",
   "type": "object",
   "additionalProperties": false,
-  "required": ["ShipmentInfo", "Shipper", "Recipient", "Packages"],
+  "required": [
+    "plannedShippingDateAndTime",
+    "pickup",
+    "productCode",
+    "accounts",
+    "customerDetails",
+    "content"
+  ],
+  "definitions": {
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postalAddress",
+        "contactInformation"
+      ],
+      "properties": {
+        "postalAddress": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "postalCode",
+            "cityName",
+            "countryCode",
+            "addressLine1"
+          ],
+          "properties": {
+            "postalCode": {
+              "type": "string",
+              "minLength": 0,
+              "maxLength": 12,
+              "description": "Postal code, empty when the address has none."
+            },
+            "cityName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 45,
+              "description": "City."
+            },
+            "countryCode": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "pattern": "^[A-Z]{2}$",
+              "description": "ISO 3166-1 alpha-2 country code."
+            },
+            "provinceCode": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 35,
+              "description": "State or province code."
+            },
+            "addressLine1": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 45,
+              "description": "Address line 1."
+            },
+            "addressLine2": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 45,
+              "description": "Address line 2."
+            },
+            "addressLine3": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 45,
+              "description": "Address line 3."
+            },
+            "countyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 45,
+              "description": "Suburb or county."
+            }
+          }
+        },
+        "contactInformation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phone",
+            "companyName",
+            "fullName"
+          ],
+          "properties": {
+            "email": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70,
+              "description": "Email address."
+            },
+            "phone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70,
+              "description": "Phone number. Required by DHL."
+            },
+            "mobilePhone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 70,
+              "description": "Mobile phone number."
+            },
+            "companyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Company name. Required by DHL; use the person's name for a private party."
+            },
+            "fullName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "description": "Contact person's full name. Required by DHL."
+            }
+          }
+        },
+        "typeCode": {
+          "type": "string",
+          "enum": [
+            "business",
+            "direct_consumer",
+            "government",
+            "other",
+            "private",
+            "reseller"
+          ],
+          "description": "Party role type."
+        }
+      }
+    }
+  },
   "properties": {
-    "ShipmentCreationDate": {
+    "plannedShippingDateAndTime": {
       "type": "string",
-      "format": "date-time",
-      "description": "Date and time the shipment is created or ready for pickup."
+      "minLength": 1,
+      "maxLength": 29,
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2} ?GMT[+-]\\d{2}:\\d{2}$",
+      "description": "When the package is handed to DHL, e.g. 2026-10-28T10:00:00 GMT-07:00. Must not be in the past."
     },
-    "DeclaredValueCurrecyCode": {
+    "pickup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "isRequested"
+      ],
+      "properties": {
+        "isRequested": {
+          "type": "boolean",
+          "description": "True to book a DHL pickup."
+        },
+        "closeTime": {
+          "type": "string",
+          "maxLength": 5,
+          "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 80
+        }
+      }
+    },
+    "productCode": {
       "type": "string",
-      "pattern": "^[A-Z]{3}$",
-      "description": "ISO 4217 currency code of the declared value. The spelling (Currecy) is DHL's own field name."
+      "minLength": 1,
+      "maxLength": 6,
+      "description": "DHL Express global product code, e.g. P (Express Worldwide) or N (domestic)."
     },
-    "ShipmentInfo": {
+    "localProductCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3,
+      "description": "DHL local product code, for domestic products."
+    },
+    "accounts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "typeCode",
+          "number"
+        ],
+        "properties": {
+          "typeCode": {
+            "type": "string",
+            "enum": [
+              "duties-taxes",
+              "payer",
+              "shipper"
+            ]
+          },
+          "number": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 12,
+            "description": "DHL Express account number."
+          }
+        }
+      },
+      "description": "DHL accounts; at least the shipper account."
+    },
+    "outputImageProperties": {
       "type": "object",
-      "description": "Service and billing account for the shipment.",
       "additionalProperties": false,
-      "required": ["ServiceType"],
+      "required": [],
       "properties": {
-        "Account": {
+        "printerDPI": {
+          "type": "number",
+          "enum": [
+            200,
+            300
+          ]
+        },
+        "encodingFormat": {
           "type": "string",
-          "description": "DHL account number billed for the shipment."
-        },
-        "ServiceType": {
-          "type": "string",
-          "minLength": 1,
-          "description": "DHL product or service code, for example P for Express Worldwide."
+          "enum": [
+            "epl",
+            "lp2",
+            "pdf",
+            "zpl"
+          ]
         }
       }
     },
-    "Shipper": {
-      "type": "object",
-      "description": "Sender (origin, ship-from) party.",
-      "additionalProperties": false,
-      "required": ["Address"],
-      "properties": {
-        "Contact": {
-          "type": "object",
-          "description": "Sender contact details.",
-          "additionalProperties": false,
-          "properties": {
-            "PersonName": { "type": "string", "description": "Sender contact person name." },
-            "CompanyName": { "type": "string", "description": "Sender company name." },
-            "PhoneNumber": { "type": "string", "description": "Sender phone number." },
-            "EmailAddress": { "type": "string", "description": "Sender email address." }
-          }
-        },
-        "Address": {
-          "type": "object",
-          "description": "Sender postal address.",
-          "additionalProperties": false,
-          "required": ["StreetLines", "City", "CountryCode"],
-          "properties": {
-            "StreetLines": { "type": "string", "minLength": 1, "description": "Sender street address, first line." },
-            "City": { "type": "string", "minLength": 1, "description": "Sender city." },
-            "PostalCode": { "type": "string", "description": "Sender postal or ZIP code." },
-            "CountryCode": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "Sender ISO 3166-1 alpha-2 country code." }
-          }
-        }
-      }
-    },
-    "Recipient": {
-      "type": "object",
-      "description": "Receiver (destination, ship-to, consignee) party.",
-      "additionalProperties": false,
-      "required": ["Address"],
-      "properties": {
-        "Contact": {
-          "type": "object",
-          "description": "Receiver contact details.",
-          "additionalProperties": false,
-          "properties": {
-            "PersonName": { "type": "string", "description": "Receiver contact person name." },
-            "CompanyName": { "type": "string", "description": "Receiver company name." },
-            "PhoneNumber": { "type": "string", "description": "Receiver phone number." },
-            "EmailAddress": { "type": "string", "description": "Receiver email address." }
-          }
-        },
-        "Address": {
-          "type": "object",
-          "description": "Receiver postal address.",
-          "additionalProperties": false,
-          "required": ["StreetLines", "City", "CountryCode"],
-          "properties": {
-            "StreetLines": { "type": "string", "minLength": 1, "description": "Receiver street address, first line." },
-            "City": { "type": "string", "minLength": 1, "description": "Receiver city." },
-            "PostalCode": { "type": "string", "description": "Receiver postal or ZIP code." },
-            "CountryCode": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "Receiver ISO 3166-1 alpha-2 country code." }
+    "customerReferences": {
+      "type": "array",
+      "maxItems": 999,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 35
+          },
+          "typeCode": {
+            "type": "string",
+            "enum": [
+              "AAJ",
+              "ACL",
+              "AFE",
+              "AFM",
+              "CID",
+              "CN",
+              "CU",
+              "DGC",
+              "ITN",
+              "LCQ",
+              "MRN",
+              "OID",
+              "PON",
+              "RMA",
+              "UCN",
+              "WLK"
+            ]
           }
         }
       }
     },
-    "Packages": {
+    "customerDetails": {
       "type": "object",
-      "description": "Packages in the shipment.",
       "additionalProperties": false,
-      "required": ["RequestedPackages"],
+      "required": [
+        "shipperDetails",
+        "receiverDetails"
+      ],
       "properties": {
-        "RequestedPackages": {
+        "shipperDetails": {
+          "$ref": "#/definitions/party"
+        },
+        "receiverDetails": {
+          "$ref": "#/definitions/party"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packages",
+        "isCustomsDeclarable",
+        "description",
+        "unitOfMeasurement"
+      ],
+      "properties": {
+        "packages": {
           "type": "array",
           "minItems": 1,
-          "description": "One entry per physical package.",
+          "maxItems": 999,
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["Weight"],
+            "required": [
+              "weight"
+            ],
             "properties": {
-              "Weight": {
+              "weight": {
+                "type": "number",
+                "minimum": 0.001,
+                "maximum": 999999999999,
+                "description": "Package weight, in kg (metric) or lb (imperial)."
+              },
+              "dimensions": {
                 "type": "object",
-                "description": "Package weight.",
                 "additionalProperties": false,
-                "required": ["Value", "Unit"],
+                "required": [
+                  "length",
+                  "width",
+                  "height"
+                ],
                 "properties": {
-                  "Value": { "type": "number", "exclusiveMinimum": 0, "description": "Weight numeric value." },
-                  "Unit": { "type": "string", "enum": ["KG", "LB"], "description": "Weight unit of measure." }
+                  "length": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 9999999,
+                    "description": "Length, in cm (metric) or in (imperial)."
+                  },
+                  "width": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 9999999,
+                    "description": "Width."
+                  },
+                  "height": {
+                    "type": "number",
+                    "minimum": 0.001,
+                    "maximum": 9999999,
+                    "description": "Height."
+                  }
                 }
               },
-              "Dimensions": {
-                "type": "object",
-                "description": "Package dimensions.",
-                "additionalProperties": false,
-                "required": ["Length", "Width", "Height", "Unit"],
-                "properties": {
-                  "Length": { "type": "number", "exclusiveMinimum": 0, "description": "Package length." },
-                  "Width": { "type": "number", "exclusiveMinimum": 0, "description": "Package width." },
-                  "Height": { "type": "number", "exclusiveMinimum": 0, "description": "Package height." },
-                  "Unit": { "type": "string", "enum": ["CM", "IN"], "description": "Dimension unit of measure." }
+              "customerReferences": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 99,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 35
+                    },
+                    "typeCode": {
+                      "type": "string",
+                      "enum": [
+                        "ABW",
+                        "ACL",
+                        "AES",
+                        "AFE",
+                        "ALX",
+                        "BRD",
+                        "CFR",
+                        "CID",
+                        "CN",
+                        "CU",
+                        "DGC",
+                        "DOM",
+                        "DTC",
+                        "DTM",
+                        "DTQ",
+                        "DTR",
+                        "FOR",
+                        "FTR",
+                        "INB",
+                        "ITN",
+                        "ITR",
+                        "MAK",
+                        "MAT",
+                        "MRN",
+                        "NLR",
+                        "OED",
+                        "OET",
+                        "OID",
+                        "OOR",
+                        "PAN",
+                        "PON",
+                        "RMA",
+                        "SE",
+                        "SME",
+                        "SON",
+                        "UCN",
+                        "USG",
+                        "USM",
+                        "WLK"
+                      ]
+                    }
+                  }
                 }
               },
-              "CustomerReferences": {
+              "description": {
                 "type": "string",
-                "description": "Customer reference for this package."
+                "minLength": 1,
+                "maxLength": 70,
+                "description": "Package contents."
               }
             }
           }
-        }
-      }
-    },
-    "InternationalDetail": {
-      "type": "object",
-      "description": "Customs information for international shipments.",
-      "additionalProperties": false,
-      "properties": {
-        "Content": {
+        },
+        "isCustomsDeclarable": {
+          "type": "boolean",
+          "description": "True for a dutiable (international goods) shipment; then exportDeclarations is required."
+        },
+        "declaredValue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 999999999999999,
+          "description": "Declared customs value of the shipment."
+        },
+        "declaredValueCurrency": {
           "type": "string",
-          "enum": ["DOCUMENTS", "NON_DOCUMENTS"],
-          "description": "Whether the shipment contains documents or dutiable goods."
+          "minLength": 3,
+          "maxLength": 3,
+          "pattern": "^[A-Z]{3}$"
         },
-        "ExportDeclaration": {
-          "type": "object",
-          "description": "Export declaration totals.",
-          "additionalProperties": false,
-          "properties": {
-            "InvoiceTotal": { "type": "number", "minimum": 0, "description": "Total commercial invoice value." }
+        "exportDeclarations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "lineItems",
+              "invoice",
+              "incoterm"
+            ],
+            "properties": {
+              "lineItems": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 999,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "number",
+                    "description",
+                    "price",
+                    "quantity",
+                    "manufacturerCountry",
+                    "weight"
+                  ],
+                  "properties": {
+                    "number": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999,
+                      "description": "Line number, starting at 1."
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 512,
+                      "description": "Description of the goods."
+                    },
+                    "price": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 999999999999999,
+                      "description": "Value of one unit."
+                    },
+                    "quantity": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "value",
+                        "unitOfMeasurement"
+                      ],
+                      "properties": {
+                        "value": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000000,
+                          "description": "Number of units."
+                        },
+                        "unitOfMeasurement": {
+                          "type": "string",
+                          "enum": [
+                            "2GM",
+                            "2M2",
+                            "3GM",
+                            "3M2",
+                            "4M2",
+                            "BOX",
+                            "CEL",
+                            "CLT",
+                            "CM",
+                            "CM2",
+                            "CM3",
+                            "CONE",
+                            "CT",
+                            "DLT",
+                            "DMQ",
+                            "DOZ",
+                            "DPR",
+                            "EA",
+                            "FT",
+                            "FT3",
+                            "GLI",
+                            "GLL",
+                            "GM",
+                            "GRS",
+                            "IN",
+                            "INQ",
+                            "J57",
+                            "KG",
+                            "KM",
+                            "LB",
+                            "LBS",
+                            "LTR",
+                            "M",
+                            "M2",
+                            "M3",
+                            "MI",
+                            "MLT",
+                            "MMQ",
+                            "NM3",
+                            "NO",
+                            "ONZ",
+                            "OZI",
+                            "PCS",
+                            "PRS",
+                            "PT",
+                            "PTD",
+                            "PTI",
+                            "PTL",
+                            "QTI",
+                            "QTL",
+                            "RILL",
+                            "ROLL",
+                            "SET",
+                            "SM3",
+                            "TNE",
+                            "TU",
+                            "X",
+                            "YD",
+                            "YD3"
+                          ],
+                          "description": "Unit of the quantity, e.g. PCS."
+                        }
+                      }
+                    },
+                    "commodityCodes": {
+                      "type": "array",
+                      "maxItems": 2,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "typeCode",
+                          "value"
+                        ],
+                        "properties": {
+                          "typeCode": {
+                            "type": "string",
+                            "enum": [
+                              "inbound",
+                              "outbound"
+                            ]
+                          },
+                          "value": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 18,
+                            "description": "HS tariff code."
+                          }
+                        }
+                      },
+                      "description": "HS codes for export (outbound) or import (inbound)."
+                    },
+                    "exportReasonType": {
+                      "type": "string",
+                      "enum": [
+                        "commercial_purpose_or_sale",
+                        "defence_material",
+                        "diplomatic_goods",
+                        "gift",
+                        "intercompany_use",
+                        "permanent",
+                        "personal_belongings_or_personal_use",
+                        "return",
+                        "return_to_origin",
+                        "sample",
+                        "temporary",
+                        "used_exhibition_goods_to_origin",
+                        "warranty_replacement"
+                      ]
+                    },
+                    "manufacturerCountry": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 2,
+                      "pattern": "^[A-Z]{2}$",
+                      "description": "ISO country code where the goods were made."
+                    },
+                    "weight": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [],
+                      "properties": {
+                        "netValue": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 999999999999
+                        },
+                        "grossValue": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 999999999999
+                        }
+                      },
+                      "description": "Line weight, in the shipment's unitOfMeasurement."
+                    }
+                  }
+                }
+              },
+              "invoice": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "number",
+                  "date"
+                ],
+                "properties": {
+                  "number": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 35,
+                    "description": "Invoice number."
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Invoice date, YYYY-MM-DD."
+                  }
+                }
+              },
+              "incoterm": {
+                "type": "string",
+                "enum": [
+                  "CFR",
+                  "CIF",
+                  "CIP",
+                  "CPT",
+                  "DAF",
+                  "DAP",
+                  "DAT",
+                  "DDP",
+                  "DDU",
+                  "DEQ",
+                  "DES",
+                  "DPU",
+                  "EXW",
+                  "FAS",
+                  "FCA",
+                  "FOB"
+                ],
+                "description": "Incoterm for this declaration."
+              },
+              "exportReason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 30
+              },
+              "exportReasonType": {
+                "type": "string",
+                "enum": [
+                  "commercial_purpose_or_sale",
+                  "defence_material",
+                  "diplomatic_goods",
+                  "gift",
+                  "intercompany_use",
+                  "permanent",
+                  "personal_belongings_or_personal_use",
+                  "return",
+                  "return_to_origin",
+                  "sample",
+                  "temporary",
+                  "used_exhibition_goods_to_origin",
+                  "warranty_replacement"
+                ]
+              },
+              "shipmentType": {
+                "type": "string",
+                "enum": [
+                  "commercial",
+                  "personal"
+                ]
+              }
+            },
+            "description": "Customs export declaration. Required by DHL when isCustomsDeclarable is true."
           }
         },
-        "Commodities": {
-          "type": "object",
-          "description": "Goods being shipped, for customs.",
-          "additionalProperties": false,
-          "properties": {
-            "Description": { "type": "string", "description": "Description of the goods." },
-            "Quantity": { "type": "number", "minimum": 0, "description": "Number of units." },
-            "UnitPrice": { "type": "number", "minimum": 0, "description": "Value of one unit." },
-            "CustomsValue": { "type": "number", "minimum": 0, "description": "Total declared customs value." },
-            "HarmonizedCode": { "type": "string", "description": "HS tariff code." },
-            "CountryOfManufacture": { "type": "string", "pattern": "^[A-Z]{2}$", "description": "ISO country code where the goods were made." }
-          }
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 70,
+          "pattern": "^[^\\s]",
+          "description": "Shipment contents, printable ASCII."
+        },
+        "incoterm": {
+          "type": "string",
+          "enum": [
+            "CFR",
+            "CIF",
+            "CIP",
+            "CPT",
+            "DAF",
+            "DAP",
+            "DAT",
+            "DDP",
+            "DDU",
+            "DEQ",
+            "DES",
+            "DPU",
+            "EXW",
+            "FAS",
+            "FCA",
+            "FOB"
+          ]
+        },
+        "unitOfMeasurement": {
+          "type": "string",
+          "enum": [
+            "imperial",
+            "metric"
+          ],
+          "description": "Weight units for every package and line item: metric = kg, imperial = lb. Also dimensions unless dimensionUnitOfMeasurement says otherwise."
+        },
+        "dimensionUnitOfMeasurement": {
+          "type": "string",
+          "enum": [
+            "imperial",
+            "metric"
+          ],
+          "description": "Dimension units when they differ from the weight units: metric = cm, imperial = in."
         }
+      },
+      "if": {
+        "properties": {
+          "isCustomsDeclarable": {
+            "const": true
+          }
+        },
+        "required": [
+          "isCustomsDeclarable"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exportDeclarations": true,
+          "declaredValue": true,
+          "declaredValueCurrency": true
+        },
+        "required": [
+          "exportDeclarations",
+          "declaredValue",
+          "declaredValueCurrency"
+        ]
       }
     }
   }
