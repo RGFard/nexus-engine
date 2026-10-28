@@ -210,6 +210,7 @@ export class TransformationExecutorService implements TransformationExecutor {
       sourcePayload,
       mapping.sourceField,
       mapping.targetField,
+      mapping.transformation.includes("array:sum"),
     );
 
     if (sourceValue === undefined) {
@@ -361,12 +362,24 @@ function isParentArrayMap(mapping: FieldMapping): boolean {
   );
 }
 
+function isBroadcastMapping(mapping: FieldMapping): boolean {
+  return mapping.targetField.includes("[]") && !mapping.sourceField.includes("[]");
+}
+
 function sortMappingsForApply(mappings: FieldMapping[]): FieldMapping[] {
   return [...mappings].sort((a, b) => {
     const aIsParent = isParentArrayMap(a);
     const bIsParent = isParentArrayMap(b);
     if (aIsParent !== bIsParent) {
       return aIsParent ? -1 : 1;
+    }
+    // A single value written to every item of a target list (a shipment reference onto
+    // every package) only reaches the items that exist, so it runs after the per-item
+    // mappings have created them.
+    const aIsBroadcast = isBroadcastMapping(a);
+    const bIsBroadcast = isBroadcastMapping(b);
+    if (aIsBroadcast !== bIsBroadcast) {
+      return aIsBroadcast ? 1 : -1;
     }
     const depthDiff = pathDepth(b.targetField) - pathDepth(a.targetField);
     if (depthDiff !== 0) {

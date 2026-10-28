@@ -98,6 +98,7 @@ export class OutboundTargetRegistry {
         targetSchemaId: plan.targetSchemaId,
         mappingCount: plan.mappings.length,
         parameters: plan.parameters ?? {},
+        defaults: plan.defaults ?? {},
         units: plan.units ?? {},
         knownGaps: plan.knownGaps ?? [],
       }))
@@ -129,6 +130,16 @@ function assertPlanShape(plan: SavedOutboundPlan): void {
   for (const m of plan.mappings) {
     if (typeof m.sourceField !== "string" || typeof m.targetField !== "string" || typeof m.transformation !== "string") {
       throw new Error(`Plan has a malformed mapping: ${JSON.stringify(m)}`);
+    }
+  }
+  for (const [block, needed] of Object.entries(plan.dropIfMissing ?? {})) {
+    if (!block.startsWith("/") || block.includes("[") || typeof needed !== "string" || !needed.startsWith(`${block}/`)) {
+      throw new Error(`Plan dropIfMissing "${block}" needs a plain object path and a path inside it`);
+    }
+  }
+  for (const [path, value] of Object.entries(plan.defaults ?? {})) {
+    if (!path.startsWith("/") || path.includes("[]") || !["string", "number", "boolean"].includes(typeof value)) {
+      throw new Error(`Plan default "${path}" needs a single, non-array path and a string, number or boolean value`);
     }
   }
   for (const [name, param] of Object.entries(plan.parameters ?? {})) {

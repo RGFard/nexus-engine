@@ -231,6 +231,20 @@ export const LOGISTICS_CONCEPTS: LogisticsConcept[] = [
     contexts: ["destination", "consignee", "recipient"],
   },
   {
+    id: "origin_phone",
+    label: "ship-from contact phone",
+    synonyms: ["shipperphone", "senderphone", "fromphone", "originphone", "phone", "phonenumber", "telephone", "telephonenumber", "contactphone", "mobile", "mobilenumber"],
+    canonicalPaths: ["/origin/phone"],
+    contexts: ["origin", "shipper", "sender"],
+  },
+  {
+    id: "destination_phone",
+    label: "ship-to contact phone",
+    synonyms: ["consigneephone", "recipientphone", "tophone", "destinationphone", "phone", "phonenumber", "telephone", "telephonenumber", "contactphone", "mobile", "mobilenumber"],
+    canonicalPaths: ["/destination/phone"],
+    contexts: ["destination", "consignee", "recipient"],
+  },
+  {
     id: "carrier_code",
     label: "carrier or operator code",
     synonyms: ["carriercode", "carrier", "carrierid", "scac", "operatorcode", "servicetype"],
@@ -370,6 +384,21 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     targetPath: "/estimatedDelivery/date",
     confidence: 0.92,
     reasoning: "Delivery date represents the estimated delivery calendar date.",
+  },
+  {
+    // UPS keeps the phone as Phone: { Number } under ShipFrom / Shipper / ShipTo.
+    sourcePattern: /\/(ship_?from|shipper|sender|origin)\/phone\/number$/i,
+    targetPath: "/origin/phone",
+    targetPattern: /^\/origin\/phone$/,
+    confidence: 0.92,
+    reasoning: "Ship-from Phone/Number is the origin contact phone.",
+  },
+  {
+    sourcePattern: /\/(ship_?to|consignee|recipient|receiver|destination)\/phone\/number$/i,
+    targetPath: "/destination/phone",
+    targetPattern: /^\/destination\/phone$/,
+    confidence: 0.92,
+    reasoning: "Ship-to Phone/Number is the destination contact phone.",
   },
   {
     sourcePattern: /PackageWeight\/Weight$/i,

@@ -272,6 +272,44 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     return value;
   }
 
+  if (step.startsWith("replace:")) {
+    // replace:X writes X wherever the source has a value, item by item for arrays.
+    // Unlike constant:, a missing source stays missing (FedEx quantityUnits PCS only
+    // when there is a quantity, a reference type only when there is a reference).
+    const fixed = parseConstant(step.slice("replace:".length));
+    const swap = (v: unknown) => (v === null || v === undefined ? v : fixed);
+    return Array.isArray(value) ? value.map(swap) : swap(value);
+  }
+
+  if (step.startsWith("lookup:")) {
+    // lookup:a=X,b=Y swaps one code for another (canonical merchandise to FedEx SOLD).
+    // A value with no entry becomes undefined, so the mapping is skipped rather than
+    // sending a code the target does not know.
+    const table = new Map<string, string>();
+    for (const pair of step.slice("lookup:".length).split(",")) {
+      const [from, to] = pair.split("=").map((x) => x.trim());
+      if (from && to) table.set(from, to);
+    }
+    const swap = (v: unknown) => (v === null || v === undefined ? v : table.get(String(v)));
+    return Array.isArray(value) ? value.map(swap) : swap(value);
+  }
+
+  if (step === "math:ceil") {
+    // Round up to a whole number, item by item for an array (FedEx takes only integer
+    // dimensions, and rounding down would declare a smaller box than the real one).
+    const ceil = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.ceil(v) : v);
+    return Array.isArray(value) ? value.map(ceil) : ceil(value);
+  }
+
+  if (step === "array:sum") {
+    // Sum the numbers in an array, e.g. every package weight into a shipment total.
+    // Anything that is not a list of numbers is left alone.
+    if (!Array.isArray(value) || value.length === 0) return value;
+    const nums = value.map((v) => (typeof v === "number" ? v : Number(v)));
+    if (nums.some((n) => !Number.isFinite(n))) return value;
+    return Math.round(nums.reduce((a, b) => a + b, 0) * 1000) / 1000;
+  }
+
   if (step === "array:first") {
     if (Array.isArray(value)) {
       return value.length === 0 ? undefined : value[0];

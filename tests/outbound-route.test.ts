@@ -116,6 +116,7 @@ describe("POST /outbound/transform parameters", () => {
     const res = await app.inject({ method: "GET", url: "/outbound/targets" });
     const dhl = res.json().targets.find((t: any) => t.system === "dhl");
     assert.equal(dhl.parameters.serviceCode.targetField, "/ShipmentInfo/ServiceType");
+    assert.equal(dhl.parameters.accountNumber.targetField, "/ShipmentInfo/Account");
     assert.deepEqual(dhl.units.weight, { accepted: ["kg", "lb"], convert: { oz: "lb", g: "kg" } });
   });
 
@@ -126,7 +127,7 @@ describe("POST /outbound/transform parameters", () => {
     const body = res.json();
     assert.equal(body.validation.valid, false);
     assert.deepEqual(body.appliedParameters, []);
-    assert.ok(body.validation.errors.some((e: any) => /ShipmentInfo/.test(e.message)));
+    assert.ok(body.validation.errors.some((e: any) => e.header === "X-Service-Code" && /DHL requires/.test(e.message)));
   });
 
   it("is valid once the caller supplies the service code", async () => {

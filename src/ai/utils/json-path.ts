@@ -40,6 +40,8 @@ export function resolveMappingSourceValue(
   root: unknown,
   sourcePointer: string,
   targetPointer: string,
+  /** The mapping aggregates a whole list (array:sum), so keep one more item wildcard. */
+  aggregate = false,
 ): unknown {
   const targetHasArray = targetPointer.includes("[]");
 
@@ -47,7 +49,10 @@ export function resolveMappingSourceValue(
   // onto /packages[]/weight/value) reads the first item of each extra outer array, so the
   // value lines up with the target's own array depth. A scalar target has depth 0, so it
   // gets item 0 throughout (what array:first means).
-  let value = getByPath(root, collapseOuterWildcards(sourcePointer, countWildcards(targetPointer)));
+  let value = getByPath(
+    root,
+    collapseOuterWildcards(sourcePointer, countWildcards(targetPointer) + (aggregate ? 1 : 0)),
+  );
 
   if (value === undefined) {
     if (sourcePointer.endsWith("[]")) {
@@ -218,6 +223,25 @@ function setAtSegments(
   }
 
   const container = asObject(current);
+
+  // `key[N]` writes item N of the array under `key` (e.g. /address/streetLines[0]),
+  // creating the array and any earlier slots it needs.
+  if (segment.index !== undefined) {
+    if (!Array.isArray(container[segment.key])) {
+      container[segment.key] = [];
+    }
+    const list = container[segment.key] as unknown[];
+    if (isLast) {
+      list[segment.index] = value;
+      return;
+    }
+    if (!isPlainObject(list[segment.index])) {
+      list[segment.index] = {};
+    }
+    setAtSegments(list[segment.index], segments, index + 1, value);
+    return;
+  }
+
   if (isLast) {
     container[segment.key] = value;
     return;

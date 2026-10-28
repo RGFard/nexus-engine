@@ -1,11 +1,12 @@
 import { TransformationExecutorService } from "../ai/services/transformation-executor.service.js";
-import { setByPath } from "../ai/utils/json-path.js";
+import { getByPath, setByPath } from "../ai/utils/json-path.js";
 import type { SchemaRegistryService } from "../services/schema-registry.service.js";
 import type { SchemaValidationService } from "../services/schema-validation.service.js";
 import { createChildLogger } from "../utils/logger.js";
 import type { OutboundTargetRegistry } from "./outbound-target.registry.js";
 import type { OutboundTransformRequest, OutboundTransformResponse } from "./outbound.types.js";
 import { applyUnitPolicy } from "./unit-conversion.js";
+import { explainTargetErrors } from "./explain-target-errors.js";
 
 export class OutboundError extends Error {
   constructor(
@@ -98,6 +99,24 @@ export class OutboundService {
       plan: target.plan,
     });
 
+    // Remove blocks the target would reject as incomplete, before defaults are added.
+    const droppedBlocks: string[] = [];
+    for (const [block, needed] of Object.entries(target.plan.dropIfMissing ?? {})) {
+      if (getByPath(execution.targetPayload, block) !== undefined && getByPath(execution.targetPayload, needed) === undefined) {
+        removeAtPath(execution.targetPayload, block);
+        droppedBlocks.push(block);
+      }
+    }
+
+    // Fixed defaults fill only what the mappings left empty.
+    const appliedDefaults: string[] = [];
+    for (const [path, value] of Object.entries(target.plan.defaults ?? {})) {
+      if (getByPath(execution.targetPayload, path) === undefined) {
+        setByPath(execution.targetPayload, path, value);
+        appliedDefaults.push(path);
+      }
+    }
+
     // Parameters are written after the mappings, so a supplied value wins over whatever
     // the canonical payload carried for the same target field.
     const appliedParameters: string[] = [];
@@ -109,7 +128,7 @@ export class OutboundService {
     const valid = target.validate(execution.targetPayload) as boolean;
     const errors = valid
       ? undefined
-      : (target.validate.errors ?? []).map((e) => ({ instancePath: e.instancePath, message: e.message }));
+      : explainTargetErrors(target.validate.errors ?? [], target.plan, target.plan.targetName ?? system);
 
     log.info(
       {
@@ -118,6 +137,8 @@ export class OutboundService {
         planId: target.plan.planId,
         applied: execution.appliedMappings.length,
         skipped: execution.skippedMappings.length,
+        dropped: droppedBlocks,
+        defaults: appliedDefaults.length,
         parameters: appliedParameters,
         unitConversions: unitConversions.length,
         valid,
@@ -131,9 +152,23 @@ export class OutboundService {
       targetPayload: execution.targetPayload,
       appliedMappings: execution.appliedMappings,
       skippedMappings: execution.skippedMappings,
+      droppedBlocks,
+      appliedDefaults,
       appliedParameters,
       unitConversions,
       validation: { valid, errors },
     };
   }
+}
+
+/** Deletes the key at a plain object path such as /a/b/c. */
+function removeAtPath(root: unknown, path: string): void {
+  const keys = path.split("/").filter(Boolean);
+  let node = root as Record<string, unknown> | undefined;
+  for (const key of keys.slice(0, -1)) {
+    const next = node?.[key];
+    if (typeof next !== "object" || next === null || Array.isArray(next)) return;
+    node = next as Record<string, unknown>;
+  }
+  if (node) delete node[keys[keys.length - 1]!];
 }

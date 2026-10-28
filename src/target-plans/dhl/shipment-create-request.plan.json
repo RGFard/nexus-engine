@@ -2,6 +2,7 @@
   "planId": "canonical-to-dhl/shipment-create-request",
   "planVersion": "1.0.0",
   "description": "Fixed outbound plan: canonical shipment-create-request to the DHL shipment request. Written by hand as the reverse of the inbound DHL mappings, so it runs without the heuristic or AI.",
+  "targetName": "DHL",
   "sourceSchemaId": "canonical://shipment/shipment-create-request",
   "targetSchemaId": "target://dhl/shipment-create-request",
   "mappings": [
@@ -251,7 +252,13 @@
   "parameters": {
     "serviceCode": {
       "targetField": "/ShipmentInfo/ServiceType",
-      "description": "DHL product code to ship with, e.g. P for Express Worldwide. Send it when the shipment did not come from DHL: other sources carry no service code, or carry another carrier's code. When given, it replaces /carrier/serviceCode."
+      "description": "DHL product code to ship with, e.g. P for Express Worldwide. Send it when the shipment did not come from DHL: other sources carry no service code, or carry another carrier's code. When given, it replaces /carrier/serviceCode.",
+      "header": "X-Service-Code"
+    },
+    "accountNumber": {
+      "targetField": "/ShipmentInfo/Account",
+      "description": "DHL account to bill. Send it when the source carries no DHL account number. When given, it replaces /carrier/accountNumber.",
+      "header": "X-Account-Number"
     }
   },
   "units": {

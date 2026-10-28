@@ -1,0 +1,404 @@
+{
+  "planId": "canonical-to-fedex/shipment-create-request",
+  "planVersion": "1.0.0",
+  "description": "Fixed outbound plan: canonical shipment-create-request to the FedEx Ship API v1 create-shipment request. Written by hand, so it runs without the heuristic or AI.",
+  "targetName": "FedEx",
+  "sourceSchemaId": "canonical://shipment/shipment-create-request",
+  "targetSchemaId": "target://fedex/shipment-create-request",
+  "mappings": [
+    {
+      "sourceField": "/carrier/accountNumber",
+      "targetField": "/accountNumber/value",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper's FedEx account number."
+    },
+    {
+      "sourceField": "/carrier/serviceCode",
+      "targetField": "/requestedShipment/serviceType",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Carrier service code, e.g. FEDEX_GROUND."
+    },
+    {
+      "sourceField": "/origin/name",
+      "targetField": "/requestedShipment/shipper/contact/personName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper contact name."
+    },
+    {
+      "sourceField": "/origin/company",
+      "targetField": "/requestedShipment/shipper/contact/companyName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper company."
+    },
+    {
+      "sourceField": "/origin/phone",
+      "targetField": "/requestedShipment/shipper/contact/phoneNumber",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper phone, required by FedEx."
+    },
+    {
+      "sourceField": "/origin/email",
+      "targetField": "/requestedShipment/shipper/contact/emailAddress",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper email."
+    },
+    {
+      "sourceField": "/origin/line1",
+      "targetField": "/requestedShipment/shipper/address/streetLines[0]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper address line 1 as streetLines item 0."
+    },
+    {
+      "sourceField": "/origin/line2",
+      "targetField": "/requestedShipment/shipper/address/streetLines[1]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper address line 2 as streetLines item 1."
+    },
+    {
+      "sourceField": "/origin/line3",
+      "targetField": "/requestedShipment/shipper/address/streetLines[2]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper address line 3 as streetLines item 2."
+    },
+    {
+      "sourceField": "/origin/city",
+      "targetField": "/requestedShipment/shipper/address/city",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper city."
+    },
+    {
+      "sourceField": "/origin/stateOrProvince",
+      "targetField": "/requestedShipment/shipper/address/stateOrProvinceCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper state or province code."
+    },
+    {
+      "sourceField": "/origin/postalCode",
+      "targetField": "/requestedShipment/shipper/address/postalCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Shipper postal code."
+    },
+    {
+      "sourceField": "/origin/countryCode",
+      "targetField": "/requestedShipment/shipper/address/countryCode",
+      "confidence": 1,
+      "transformation": "direct|normalize:countryCode|cast:string",
+      "reasoning": "Shipper country code."
+    },
+    {
+      "sourceField": "/origin/residential",
+      "targetField": "/requestedShipment/shipper/address/residential",
+      "confidence": 1,
+      "transformation": "direct|cast:boolean",
+      "reasoning": "Shipper residential flag."
+    },
+    {
+      "sourceField": "/destination/name",
+      "targetField": "/requestedShipment/recipients[0]/contact/personName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient contact name."
+    },
+    {
+      "sourceField": "/destination/company",
+      "targetField": "/requestedShipment/recipients[0]/contact/companyName",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient company."
+    },
+    {
+      "sourceField": "/destination/phone",
+      "targetField": "/requestedShipment/recipients[0]/contact/phoneNumber",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient phone, required by FedEx."
+    },
+    {
+      "sourceField": "/destination/email",
+      "targetField": "/requestedShipment/recipients[0]/contact/emailAddress",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient email."
+    },
+    {
+      "sourceField": "/destination/line1",
+      "targetField": "/requestedShipment/recipients[0]/address/streetLines[0]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient address line 1 as streetLines item 0."
+    },
+    {
+      "sourceField": "/destination/line2",
+      "targetField": "/requestedShipment/recipients[0]/address/streetLines[1]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient address line 2 as streetLines item 1."
+    },
+    {
+      "sourceField": "/destination/line3",
+      "targetField": "/requestedShipment/recipients[0]/address/streetLines[2]",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient address line 3 as streetLines item 2."
+    },
+    {
+      "sourceField": "/destination/city",
+      "targetField": "/requestedShipment/recipients[0]/address/city",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient city."
+    },
+    {
+      "sourceField": "/destination/stateOrProvince",
+      "targetField": "/requestedShipment/recipients[0]/address/stateOrProvinceCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient state or province code."
+    },
+    {
+      "sourceField": "/destination/postalCode",
+      "targetField": "/requestedShipment/recipients[0]/address/postalCode",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Recipient postal code."
+    },
+    {
+      "sourceField": "/destination/countryCode",
+      "targetField": "/requestedShipment/recipients[0]/address/countryCode",
+      "confidence": 1,
+      "transformation": "direct|normalize:countryCode|cast:string",
+      "reasoning": "Recipient country code."
+    },
+    {
+      "sourceField": "/destination/residential",
+      "targetField": "/requestedShipment/recipients[0]/address/residential",
+      "confidence": 1,
+      "transformation": "direct|cast:boolean",
+      "reasoning": "Recipient residential flag."
+    },
+    {
+      "sourceField": "/packages[]/weight/value",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/weight/value",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Package weight value."
+    },
+    {
+      "sourceField": "/packages[]/weight/unit",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/weight/units",
+      "confidence": 1,
+      "transformation": "array:map|cast:string|normalize:uppercase",
+      "reasoning": "Package weight unit, LB or KG."
+    },
+    {
+      "sourceField": "/packages[]/dimensions/length",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/dimensions/length",
+      "confidence": 1,
+      "transformation": "array:map|cast:number|math:ceil",
+      "reasoning": "Package length, rounded up to a whole number as FedEx requires."
+    },
+    {
+      "sourceField": "/packages[]/dimensions/width",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/dimensions/width",
+      "confidence": 1,
+      "transformation": "array:map|cast:number|math:ceil",
+      "reasoning": "Package width, rounded up to a whole number as FedEx requires."
+    },
+    {
+      "sourceField": "/packages[]/dimensions/height",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/dimensions/height",
+      "confidence": 1,
+      "transformation": "array:map|cast:number|math:ceil",
+      "reasoning": "Package height, rounded up to a whole number as FedEx requires."
+    },
+    {
+      "sourceField": "/packages[]/dimensions/unit",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/dimensions/units",
+      "confidence": 1,
+      "transformation": "array:map|cast:string|normalize:uppercase",
+      "reasoning": "Package dimension unit, IN or CM."
+    },
+    {
+      "sourceField": "/packages[]/weight/value",
+      "targetField": "/requestedShipment/totalWeight",
+      "confidence": 1,
+      "transformation": "array:sum|cast:number",
+      "reasoning": "Total weight is the sum of the package weights, in the package unit."
+    },
+    {
+      "sourceField": "/identifiers/clientReferenceId",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/customerReferences[0]/value",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Client reference printed on every package label."
+    },
+    {
+      "sourceField": "/identifiers/clientReferenceId",
+      "targetField": "/requestedShipment/requestedPackageLineItems[]/customerReferences[0]/customerReferenceType",
+      "confidence": 1,
+      "transformation": "replace:CUSTOMER_REFERENCE",
+      "reasoning": "Reference kind for the client reference; only written when a reference exists."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/description",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/description",
+      "confidence": 1,
+      "transformation": "array:map|cast:string",
+      "reasoning": "Commodity description."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/quantity",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/quantity",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Commodity quantity."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/quantity",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/quantityUnits",
+      "confidence": 1,
+      "transformation": "replace:PCS",
+      "reasoning": "Quantity is counted in pieces."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/unitValue/amount",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/unitPrice/amount",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Value of one unit."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/unitValue/currency",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/unitPrice/currency",
+      "confidence": 1,
+      "transformation": "array:map|cast:string|normalize:currency",
+      "reasoning": "Currency of the unit value."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/hsCode",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/harmonizedCode",
+      "confidence": 1,
+      "transformation": "array:map|cast:string",
+      "reasoning": "HS tariff code."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/countryOfOrigin",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/countryOfManufacture",
+      "confidence": 1,
+      "transformation": "array:map|normalize:countryCode|cast:string",
+      "reasoning": "Country where the goods were made."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/weight/value",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/weight/value",
+      "confidence": 1,
+      "transformation": "array:map|cast:number",
+      "reasoning": "Commodity weight value."
+    },
+    {
+      "sourceField": "/customs/lineItems[]/weight/unit",
+      "targetField": "/requestedShipment/customsClearanceDetail/commodities[]/weight/units",
+      "confidence": 1,
+      "transformation": "array:map|cast:string|normalize:uppercase",
+      "reasoning": "Commodity weight unit."
+    },
+    {
+      "sourceField": "/customs/declaredValue/amount",
+      "targetField": "/requestedShipment/customsClearanceDetail/totalCustomsValue/amount",
+      "confidence": 1,
+      "transformation": "direct|cast:number",
+      "reasoning": "Total declared customs value."
+    },
+    {
+      "sourceField": "/customs/declaredValue/currency",
+      "targetField": "/requestedShipment/customsClearanceDetail/totalCustomsValue/currency",
+      "confidence": 1,
+      "transformation": "direct|cast:string|normalize:currency",
+      "reasoning": "Currency of the customs value."
+    },
+    {
+      "sourceField": "/customs/contentsType",
+      "targetField": "/requestedShipment/customsClearanceDetail/commercialInvoice/shipmentPurpose",
+      "confidence": 1,
+      "transformation": "lookup:merchandise=SOLD,gift=GIFT,sample=SAMPLE,returned_goods=REPAIR_AND_RETURN,documents=NOT_SOLD,other=NOT_SOLD",
+      "reasoning": "Why the goods are shipped, from canonical contents type."
+    },
+    {
+      "sourceField": "/customs/incoterm",
+      "targetField": "/requestedShipment/customsClearanceDetail/commercialInvoice/termsOfSale",
+      "confidence": 1,
+      "transformation": "direct|cast:string",
+      "reasoning": "Incoterm as terms of sale."
+    }
+  ],
+  "unmappedSourceFields": [],
+  "unmappedTargetFields": [
+    "/requestedShipment/shipDatestamp",
+    "/requestedShipment/customsClearanceDetail/dutiesPayment"
+  ],
+  "dropIfMissing": {
+    "/requestedShipment/customsClearanceDetail": "/requestedShipment/customsClearanceDetail/commodities"
+  },
+  "defaults": {
+    "/labelResponseOptions": "URL_ONLY",
+    "/requestedShipment/packagingType": "YOUR_PACKAGING",
+    "/requestedShipment/pickupType": "USE_SCHEDULED_PICKUP",
+    "/requestedShipment/shippingChargesPayment/paymentType": "SENDER",
+    "/requestedShipment/labelSpecification/imageType": "PDF",
+    "/requestedShipment/labelSpecification/labelStockType": "PAPER_85X11_TOP_HALF_LABEL"
+  },
+  "parameters": {
+    "serviceCode": {
+      "targetField": "/requestedShipment/serviceType",
+      "description": "FedEx service to ship with, e.g. FEDEX_GROUND or PRIORITY_OVERNIGHT. Send it when the shipment did not come from FedEx. When given, it replaces /carrier/serviceCode.",
+      "header": "X-Service-Code"
+    },
+    "accountNumber": {
+      "targetField": "/accountNumber/value",
+      "description": "FedEx account to bill. Send it when the source carries no FedEx account number. When given, it replaces /carrier/accountNumber.",
+      "header": "X-Account-Number"
+    }
+  },
+  "units": {
+    "weight": {
+      "accepted": [
+        "kg",
+        "lb"
+      ],
+      "convert": {
+        "oz": "lb",
+        "g": "kg"
+      }
+    },
+    "dimension": {
+      "accepted": [
+        "cm",
+        "in"
+      ],
+      "convert": {
+        "m": "cm"
+      }
+    }
+  },
+  "knownGaps": [
+    "/carrier/serviceCode is passed through unchanged unless the serviceCode parameter is sent, so another carrier's code reaches FedEx as is.",
+    "totalWeight is the sum of package weights and assumes every package uses the same weight unit.",
+    "An address with line3 but no line2 leaves a gap in streetLines and fails the schema.",
+    "Only clientReferenceId is sent as a customer reference; purchaseOrderNumber and invoiceNumber are not.",
+    "International shipments need customs line items plus contentsType or incoterm. Customs data with no line items is dropped, since FedEx takes no customs block without commodities.",
+    "shipDatestamp and dutiesPayment are not sent; FedEx uses today and its own default.",
+    "Only the first recipient is sent."
+  ]
+}

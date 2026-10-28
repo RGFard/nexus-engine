@@ -23,6 +23,8 @@ const errorListSchema = {
     properties: {
       instancePath: { type: "string" },
       message: { type: "string" },
+      canonicalField: { type: "string" },
+      header: { type: "string" },
     },
   },
 } as const;
@@ -106,6 +108,8 @@ export async function registerOutboundRoutes(
               targetPayload: {},
               appliedMappings: { type: "array", items: mappingSchema },
               skippedMappings: { type: "array", items: mappingSchema },
+              droppedBlocks: { type: "array", items: { type: "string" } },
+              appliedDefaults: { type: "array", items: { type: "string" } },
               appliedParameters: { type: "array", items: { type: "string" } },
               unitConversions: {
                 type: "array",
