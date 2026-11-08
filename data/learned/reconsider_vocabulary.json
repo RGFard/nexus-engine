@@ -130,18 +130,18 @@
     "targetField": "/packages[]/declaredValue/amount",
     "transformation": "direct|cast:number",
     "confidence": 0.75,
-    "reasoning": "Unit price per item serves as declared value for customs/insurance purposes.",
+    "reasoning": "Unit price can serve as declared value per unit; maps to declaredValue/amount for package-level valuation.",
     "context": {
       "targetSchemaId": "canonical://shipment/shipment-create-request",
       "clientId": "dev-user"
     },
     "id": "541dce07bbd8",
-    "firstSeenAt": "2026-10-08T23:42:45.333Z",
-    "lastSeenAt": "2026-10-18T03:19:51.839Z",
-    "seenCount": 5,
+    "firstSeenAt": "2026-10-29T04:05:52.483Z",
+    "lastSeenAt": "2026-10-29T04:05:52.483Z",
+    "seenCount": 1,
     "sourceSystem": "ShipStation",
-    "reason": "A line item's unit price is not a package's declared value (rejected before too).",
-    "rejectedAt": "2026-10-28T06:27:56.559Z"
+    "reason": "A line item's unit price is not a package's declared value.",
+    "rejectedAt": "2026-11-08T22:03:43.144Z"
   },
   {
     "sourceField": "/ShipmentRequest/RequestedShipment/Packages/RequestedPackages[]/CustomerReferences",
@@ -258,12 +258,12 @@
       "clientId": "dev-user"
     },
     "id": "04804113e9f5",
-    "firstSeenAt": "2026-10-28T05:42:41.139Z",
-    "lastSeenAt": "2026-10-28T05:49:30.209Z",
-    "seenCount": 3,
+    "firstSeenAt": "2026-10-29T04:03:49.430Z",
+    "lastSeenAt": "2026-10-29T04:03:49.430Z",
+    "seenCount": 1,
     "sourceSystem": null,
     "reason": "A package reference is not a package ID.",
-    "rejectedAt": "2026-10-28T06:27:56.700Z"
+    "rejectedAt": "2026-11-08T22:03:43.131Z"
   },
   {
     "sourceField": "/content/declaredValueCurrency",
@@ -287,19 +287,19 @@
     "sourceField": "/plannedShippingDateAndTime",
     "targetField": "/metadata/createdAt",
     "transformation": "date:iso8601",
-    "confidence": 0.65,
-    "reasoning": "Planned shipping date is closest temporal metadata match; normalize ISO 8601 timestamp for createdAt field",
+    "confidence": 0.72,
+    "reasoning": "Planned shipping date-time indicates shipment creation or scheduling time; maps to metadata timestamp tracking. Source is ISO 8601-like format; target expects date-time format.",
     "context": {
       "targetSchemaId": "canonical://shipment/shipment-create-request",
       "clientId": "dev-user"
     },
     "id": "d23c445bc1ef",
-    "firstSeenAt": "2026-10-28T05:46:26.781Z",
-    "lastSeenAt": "2026-10-28T05:49:30.209Z",
-    "seenCount": 2,
+    "firstSeenAt": "2026-10-29T04:03:49.430Z",
+    "lastSeenAt": "2026-10-29T05:32:14.871Z",
+    "seenCount": 3,
     "sourceSystem": null,
     "reason": "The planned ship time is not the creation time; canonical has no ship-date field.",
-    "rejectedAt": "2026-10-28T06:27:56.734Z"
+    "rejectedAt": "2026-11-08T22:03:43.124Z"
   },
   {
     "sourceField": "/content/declaredValue",
@@ -330,11 +330,11 @@
       "clientId": "dev-user"
     },
     "id": "b3fb4c56617a",
-    "firstSeenAt": "2026-10-28T05:49:30.209Z",
-    "lastSeenAt": "2026-10-28T05:49:30.209Z",
+    "firstSeenAt": "2026-10-29T04:03:49.430Z",
+    "lastSeenAt": "2026-10-29T04:03:49.430Z",
     "seenCount": 1,
     "sourceSystem": null,
-    "reason": "Fixed kg is wrong for imperial; the unit-system synthesizer handles this field.",
-    "rejectedAt": "2026-10-28T06:27:56.746Z"
+    "reason": "Fixed kg is wrong for imperial; the unit-system step fills units.",
+    "rejectedAt": "2026-11-08T22:03:43.138Z"
   }
 ]

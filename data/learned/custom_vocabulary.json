@@ -802,5 +802,65 @@
     "canonicalField": "/customs/incoterm",
     "transformation": "direct|cast:string",
     "acceptedAt": "2026-10-28T06:27:56.741Z"
+  },
+  {
+    "inputField": "/content/packages[]/customerReferences[]/value",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.150Z"
+  },
+  {
+    "inputField": "/shipment/to_address/country",
+    "canonicalField": "/destination/countryCode",
+    "transformation": "normalize:countryCode|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.157Z"
+  },
+  {
+    "inputField": "/shipment/to_address/street1",
+    "canonicalField": "/destination/line1",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.162Z"
+  },
+  {
+    "inputField": "/shipment/to_address/name",
+    "canonicalField": "/destination/name",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.168Z"
+  },
+  {
+    "inputField": "/shipment/to_address/zip",
+    "canonicalField": "/destination/postalCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.174Z"
+  },
+  {
+    "inputField": "/shipment/from_address/country",
+    "canonicalField": "/origin/countryCode",
+    "transformation": "normalize:countryCode|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.180Z"
+  },
+  {
+    "inputField": "/shipment/from_address/street1",
+    "canonicalField": "/origin/line1",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.186Z"
+  },
+  {
+    "inputField": "/shipment/from_address/name",
+    "canonicalField": "/origin/name",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.192Z"
+  },
+  {
+    "inputField": "/shipment/from_address/zip",
+    "canonicalField": "/origin/postalCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-08T22:03:43.197Z"
+  },
+  {
+    "inputField": "/shipment/parcel/weight",
+    "canonicalField": "/packages[]/weight/value",
+    "transformation": "cast:number",
+    "acceptedAt": "2026-11-08T22:03:43.204Z"
   }
 ]
