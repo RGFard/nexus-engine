@@ -30,8 +30,12 @@ let aiResponse: Array<Record<string, unknown>> = [];
   },
 };
 // Each test proposes different AI output for the same source paths — bypass the AI cache.
-const clearAiCache = () =>
+// Also forget no-home fields, so an earlier test's AI answer doesn't stop this one asking.
+const { learnedVocabularyStore } = await import("../src/ai/services/learned-vocabulary.store.js");
+const clearAiCache = () => {
   (aiMappingService as unknown as { mappingCache: Map<string, unknown> }).mappingCache.clear();
+  return learnedVocabularyStore.clearNoHome();
+};
 
 const ai = (sourceField: string, targetField: string, confidence = 0.9, transformation = "direct") => ({
   sourceField, targetField, confidence, transformation, reasoning: "stub",
@@ -48,7 +52,7 @@ let app: FastifyInstance;
 let dhl: Record<string, unknown>;
 
 async function normalize(sourcePayload: Record<string, unknown>) {
-  clearAiCache();
+  await clearAiCache();
   const res = await app.inject({
     method: "POST",
     url: "/ai/normalize",

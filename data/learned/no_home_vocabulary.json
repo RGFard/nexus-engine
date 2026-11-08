@@ -1,0 +1,72 @@
+[
+  {
+    "sourceField": "/billTo/name",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:17:34.439Z",
+    "lastSeenAt": "2026-10-29T05:32:02.932Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/billTo/state",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:17:34.439Z",
+    "lastSeenAt": "2026-10-29T05:32:02.932Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/billTo/phone",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:17:34.439Z",
+    "lastSeenAt": "2026-10-29T05:32:02.932Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/shipments[]/trackingNumber",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:17:34.439Z",
+    "lastSeenAt": "2026-10-29T05:32:02.932Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/ERZET",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/VKORG",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/LGORT",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/WERKS",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/LGPBE",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  },
+  {
+    "sourceField": "/TRACKING_ID",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-10-29T05:19:44.688Z",
+    "lastSeenAt": "2026-10-29T05:31:57.536Z",
+    "seenCount": 2
+  }
+]

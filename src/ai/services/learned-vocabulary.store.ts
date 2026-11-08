@@ -15,6 +15,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type {
   LearnedVocabularyEntry,
+  NoHomeVocabularyEntry,
   PendingVocabularyEntry,
   PendingVocabularyInput,
   ReconsiderVocabularyEntry,
@@ -41,6 +42,17 @@ export interface LearnedVocabularyStore {
    * to (null if nothing does).
    */
   listReconsider(): Promise<ReconsiderVocabularyEntryWithSelection[]>;
+  /** Remember source fields the AI looked at and could not place (see NoHomeVocabularyEntry). */
+  recordNoHome(sourceFields: string[], targetKey: string): Promise<void>;
+  /**
+   * Source fields known to have no home in the canonical target identified by targetKey:
+   * the AI left them out at least NO_HOME_MIN_MISSES times, so one odd answer can't hide a
+   * field for good.
+   */
+  loadNoHome(targetKey: string): Promise<Set<string>>;
+  listNoHome(): Promise<NoHomeVocabularyEntry[]>;
+  /** Forget every no-home entry (e.g. after canonical gains fields, or in tests). */
+  clearNoHome(): Promise<void>;
 }
 
 export function pendingId(sourceField: string, targetField: string): string {
@@ -58,6 +70,13 @@ interface State {
   pending: Map<string, PendingVocabularyEntry>;
   custom: Map<string, LearnedVocabularyEntry>;
   reconsider: Map<string, ReconsiderVocabularyEntry>;
+  noHome: Map<string, NoHomeVocabularyEntry>;
+}
+
+export const NO_HOME_MIN_MISSES = 2;
+
+function noHomeKey(sourceField: string, targetKey: string): string {
+  return `${targetKey}\u0000${sourceField}`;
 }
 
 /**
@@ -144,6 +163,45 @@ abstract class BaseLearnedVocabularyStore implements LearnedVocabularyStore {
     return new Map((await this.read()).custom);
   }
 
+  recordNoHome(sourceFields: string[], targetKey: string): Promise<void> {
+    if (sourceFields.length === 0) return Promise.resolve();
+    return this.mutate((state) => {
+      const now = new Date().toISOString();
+      for (const sourceField of sourceFields) {
+        const key = noHomeKey(sourceField, targetKey);
+        const existing = state.noHome.get(key);
+        state.noHome.set(
+          key,
+          existing
+            ? { ...existing, lastSeenAt: now, seenCount: existing.seenCount + 1 }
+            : { sourceField, targetKey, firstSeenAt: now, lastSeenAt: now, seenCount: 1 },
+        );
+      }
+    });
+  }
+
+  async loadNoHome(targetKey: string): Promise<Set<string>> {
+    await this.queue;
+    const { noHome } = await this.read();
+    return new Set(
+      [...noHome.values()]
+        .filter((e) => e.targetKey === targetKey && e.seenCount >= NO_HOME_MIN_MISSES)
+        .map((e) => e.sourceField),
+    );
+  }
+
+  clearNoHome(): Promise<void> {
+    return this.mutate((state) => {
+      state.noHome.clear();
+    });
+  }
+
+  async listNoHome(): Promise<NoHomeVocabularyEntry[]> {
+    await this.queue;
+    const { noHome } = await this.read();
+    return [...noHome.values()].sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
+  }
+
   async listReconsider(): Promise<ReconsiderVocabularyEntryWithSelection[]> {
     await this.queue;
     const { reconsider, custom } = await this.read();
@@ -158,13 +216,14 @@ abstract class BaseLearnedVocabularyStore implements LearnedVocabularyStore {
 
 /** In-memory store — used in tests and when LEARNED_VOCAB_DIR is unset. */
 export class InMemoryLearnedVocabularyStore extends BaseLearnedVocabularyStore {
-  private state: State = { pending: new Map(), custom: new Map(), reconsider: new Map() };
+  private state: State = { pending: new Map(), custom: new Map(), reconsider: new Map(), noHome: new Map() };
 
   protected async read(): Promise<State> {
     return {
       pending: new Map(this.state.pending),
       custom: new Map(this.state.custom),
       reconsider: new Map(this.state.reconsider),
+      noHome: new Map(this.state.noHome),
     };
   }
 
@@ -179,7 +238,9 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
     super();
   }
 
-  private file(name: "pending_vocabulary" | "custom_vocabulary" | "reconsider_vocabulary"): string {
+  private file(
+    name: "pending_vocabulary" | "custom_vocabulary" | "reconsider_vocabulary" | "no_home_vocabulary",
+  ): string {
     return path.join(this.baseDir, `${name}.json`);
   }
 
@@ -203,10 +264,12 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
     const pending = await this.readArray<PendingVocabularyEntry>(this.file("pending_vocabulary"));
     const custom = await this.readArray<LearnedVocabularyEntry>(this.file("custom_vocabulary"));
     const reconsider = await this.readArray<ReconsiderVocabularyEntry>(this.file("reconsider_vocabulary"));
+    const noHome = await this.readArray<NoHomeVocabularyEntry>(this.file("no_home_vocabulary"));
     return {
       pending: new Map(pending.map((e) => [e.id, e])),
       custom: new Map(custom.map((e) => [e.inputField, e])),
       reconsider: new Map(reconsider.map((e) => [e.id, e])),
+      noHome: new Map(noHome.map((e) => [noHomeKey(e.sourceField, e.targetKey), e])),
     };
   }
 
@@ -215,6 +278,7 @@ export class JsonFileLearnedVocabularyStore extends BaseLearnedVocabularyStore {
     await this.writeArray(this.file("pending_vocabulary"), [...state.pending.values()]);
     await this.writeArray(this.file("custom_vocabulary"), [...state.custom.values()]);
     await this.writeArray(this.file("reconsider_vocabulary"), [...state.reconsider.values()]);
+    await this.writeArray(this.file("no_home_vocabulary"), [...state.noHome.values()]);
   }
 }
 

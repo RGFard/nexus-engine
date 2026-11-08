@@ -118,9 +118,37 @@ export class AiMappingService {
     const mappedTargets = new Set(mappings.map((m) => m.targetField));
     const mappedSourcesBefore = new Set(mappings.map((m) => m.sourceField));
     const targetByPath = new Map(targetAnalysis.fields.map((f) => [f.path, f]));
+    // A warehouse reference (ShipStation) means the origin address comes from the location
+    // table after mapping. The AI cannot find it in the payload either, so don't ask.
+    const originFromWarehouse = sourceAnalysis.fields.some((f) =>
+      ORIGIN_REF_PATTERNS.some((r) => r.pattern.test(f.path)),
+    );
+    // A shipment-level unit system (DHL "metric") fills bare weight and dimension units
+    // after mapping (fillUnitsFromSystem), so those units are not missing either.
+    const unitsFromSystem = sourceAnalysis.fields.some((f) => {
+      if (f.kind === "object" || f.path.includes("[]")) return false;
+      const v = f.exampleValue ?? getByPath(request.sourceExamplePayload, f.path);
+      return typeof v === "string" && UNIT_SYSTEMS.has(v.trim().toLowerCase());
+    });
+    const filledLater = (p: string) =>
+      (originFromWarehouse && p.startsWith("/origin/")) ||
+      (unitsFromSystem && /\/(weight|dimensions)\/unit$/.test(p));
     const unmappedRequiredBefore = targetAnalysis.fields
       .filter((f) => isTrulyUnmappedRequired(f, mappedTargets, targetByPath))
-      .map((f) => f.path);
+      .map((f) => f.path)
+      .filter((p) => !filledLater(p));
+
+    // Fields the AI already looked at and could not place in this canonical target.
+    const targetKey = createHash("sha256")
+      .update(targetAnalysis.fields.map((f) => f.path).sort().join("|"))
+      .digest("hex")
+      .slice(0, 16);
+    let noHome = new Set<string>();
+    try {
+      noHome = await this.learnedStore.loadNoHome(targetKey);
+    } catch (err) {
+      log.warn({ err }, "Could not load the no-home list; continuing without it");
+    }
 
     // heuristicAvg only reflects the confidence of fields that DID map, and
     // hasUnmappedRequired only looks at unmapped TARGET fields that are schema-
@@ -129,7 +157,7 @@ export class AiMappingService {
     // nothing recognized it, while the fields that DID map happen to be genuinely
     // high-confidence. See isPlausibleUnmappedField below.
     const unmappedPlausibleFields = sourceAnalysis.fields
-      .filter((f) => !mappedSourcesBefore.has(f.path) && isPlausibleUnmappedField(f))
+      .filter((f) => !mappedSourcesBefore.has(f.path) && !noHome.has(f.path) && isPlausibleUnmappedField(f))
       .map((f) => f.path);
 
     const noMappingsFound = mappings.length === 0;
@@ -148,6 +176,12 @@ export class AiMappingService {
     // pairs the AI proposed. A final mapping is "from AI" only if it's in the second
     // set and not the first — those are what get queued in pending_vocabulary.
     const preAiKeys = new Set(mappings.map(mappingKey));
+    // Weak heuristic guesses (below the AI threshold). When the AI proposes the same
+    // pair, that confirmation is worth learning: queued in pending like an AI mapping,
+    // so once accepted the field maps at full confidence and stops pulling in the AI.
+    const weakPreAiKeys = new Set(
+      mappings.filter((m) => m.confidence < this.config.aiFallbackThreshold).map(mappingKey),
+    );
     const aiKeys = new Set<string>();
 
     // Routes the heuristic took via an explicit rule are deterministic decisions, not
@@ -157,6 +191,9 @@ export class AiMappingService {
     // deduplicateBySource, dropping the package weight and queuing the self-mappings
     // as "learned" vocabulary.
     const ruleRoutes = explicitRuleRoutes(mappings);
+    // True once the AI returned a usable answer (fresh or cached): only then can a field
+    // it left out be called "no home". An empty answer may be a failed parse.
+    let aiAnswered = false;
 
     log.info(
       {
@@ -209,6 +246,7 @@ export class AiMappingService {
         );
         this.mappingCache.set(cacheKey, aiMappings);
       }
+      aiAnswered = aiMappings.length > 0;
       aiMappings = dropRuleConflicts(aiMappings, ruleRoutes);
       for (const m of aiMappings) aiKeys.add(mappingKey(m));
       mappings = mergeMappings(mappings, aiMappings);
@@ -220,7 +258,10 @@ export class AiMappingService {
 
       const mappedAfterFirst = new Set(mappings.map((m) => m.targetField));
       const stillMissing = REQUIRED_TARGET_PATHS.filter(
-        (p) => !mappedAfterFirst.has(p) && !isArrayParentMapped(p, mappedAfterFirst),
+        (p) =>
+          !mappedAfterFirst.has(p) &&
+          !isArrayParentMapped(p, mappedAfterFirst) &&
+          !filledLater(p),
       );
       if (stillMissing.length > 0) {
         log.info({ stillMissing }, "Second AI pass for missing required fields");
@@ -348,6 +389,7 @@ export class AiMappingService {
         [...mappings, ...lowConfidenceMappings],
         preAiKeys,
         aiKeys,
+        weakPreAiKeys,
         sourceAnalysis,
         targetAnalysis.schemaId,
         clientId,
@@ -356,6 +398,20 @@ export class AiMappingService {
 
     const mappedSources = new Set(mappings.map((m) => m.sourceField));
     const mappedTargetsFinal = new Set(mappings.map((m) => m.targetField));
+
+    if (aiAnswered) {
+      const leftOut = unmappedPlausibleFields.filter(
+        (p) => !mappedSources.has(p) && !lowConfidenceMappings.some((m) => m.sourceField === p),
+      );
+      if (leftOut.length > 0) {
+        try {
+          await this.learnedStore.recordNoHome(leftOut, targetKey);
+          log.info({ fields: leftOut }, "AI found no canonical home for these fields; they won't trigger AI again");
+        } catch (err) {
+          log.warn({ err }, "Could not record the no-home list");
+        }
+      }
+    }
 
     const unmappedSourceFields = semanticMatcherService.findUnmapped(sourceAnalysis, mappedSources);
 
@@ -544,6 +600,7 @@ export class AiMappingService {
     finalMappings: FieldMapping[],
     preAiKeys: Set<string>,
     aiKeys: Set<string>,
+    weakPreAiKeys: Set<string>,
     sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
     targetSchemaId: string | undefined,
     clientId: string | undefined,
@@ -554,7 +611,7 @@ export class AiMappingService {
       const key = mappingKey(m);
       return (
         aiKeys.has(key) &&
-        !preAiKeys.has(key) &&
+        (!preAiKeys.has(key) || weakPreAiKeys.has(key)) &&
         sourcePaths.has(m.sourceField) &&
         !isExactPathPair(m)
       );

@@ -99,3 +99,17 @@ export interface ReconsiderVocabularyEntryWithSelection extends ReconsiderVocabu
    *  not a losing side of a conflict). Computed live on each list call. */
   selectedTarget: string | null;
 }
+
+/**
+ * A source field the AI was asked about and could not place anywhere in canonical.
+ * Kept so the same field does not trigger an AI call on every request. Tied to the
+ * canonical field list it was judged against: when canonical changes, it no longer applies.
+ */
+export interface NoHomeVocabularyEntry {
+  sourceField: string;
+  /** Hash of the canonical target's field paths at the time */
+  targetKey: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  seenCount: number;
+}
