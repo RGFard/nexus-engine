@@ -862,5 +862,35 @@
     "canonicalField": "/packages[]/weight/value",
     "transformation": "cast:number",
     "acceptedAt": "2026-11-08T22:03:43.204Z"
+  },
+  {
+    "inputField": "/ShipmentRequest/Shipment/PaymentInformation/ShipmentCharge/BillShipper/AccountNumber",
+    "canonicalField": "/carrier/accountNumber",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:25:53.691Z"
+  },
+  {
+    "inputField": "/ShipmentRequest/Shipment/Service/Code",
+    "canonicalField": "/carrier/serviceCode",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:25:53.697Z"
+  },
+  {
+    "inputField": "/ShipmentRequest/Shipment/ShipTo/Address/StateProvinceCode",
+    "canonicalField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:25:53.703Z"
+  },
+  {
+    "inputField": "/ShipmentRequest/Request/TransactionReference/CustomerContext",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:25:53.710Z"
+  },
+  {
+    "inputField": "/ShipmentRequest/Shipment/Package/Dimensions/UnitOfMeasurement/Code",
+    "canonicalField": "/packages[]/dimensions/unit",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:25:53.716Z"
   }
 ]

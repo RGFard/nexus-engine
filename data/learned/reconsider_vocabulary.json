@@ -377,19 +377,19 @@
     "sourceField": "/ShipmentRequest/Shipment/ReferenceNumber/Value",
     "targetField": "/identifiers/orderId",
     "transformation": "direct|cast:string",
-    "confidence": 0.8,
-    "reasoning": "ReferenceNumber/Value is a business reference that aligns with order identification in the canonical model.",
+    "confidence": 0.85,
+    "reasoning": "UPS ReferenceNumber/Value is a client-supplied order or shipment reference identifier.",
     "context": {
       "targetSchemaId": "canonical://shipment/shipment-create-request",
       "clientId": "dev-user"
     },
     "id": "ebcff8c14e53",
-    "firstSeenAt": "2026-11-08T23:54:17.996Z",
-    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "firstSeenAt": "2026-11-09T00:12:11.258Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
     "seenCount": 1,
     "sourceSystem": "DHL",
     "reason": "References go to clientReferenceId, as for FedEx and DHL; that is what the outbound plans send.",
-    "rejectedAt": "2026-11-09T00:10:19.556Z"
+    "rejectedAt": "2026-11-09T04:25:53.722Z"
   },
   {
     "sourceField": "/ShipmentRequest/Shipment/Shipper/Name",
@@ -462,5 +462,55 @@
     "sourceSystem": "DHL",
     "reason": "Shipper is the account owner; the origin comes from ShipFrom when present.",
     "rejectedAt": "2026-11-09T00:10:19.584Z"
+  },
+  {
+    "sourceField": "/ShipFrom/Name",
+    "targetField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "ShipFrom provides an alternative origin context (redundant with Shipper in this payload). Mapping to origin/company as organizational identifier when Shipper is absent or secondary.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "efea4a3b2040",
+    "firstSeenAt": "2026-10-08T23:27:46.622Z",
+    "lastSeenAt": "2026-10-08T23:27:46.622Z",
+    "seenCount": 1,
+    "reason": "From our old invented UPS shape; real UPS requests wrap this in ShipmentRequest.Shipment.",
+    "rejectedAt": "2026-11-09T04:25:53.673Z"
+  },
+  {
+    "sourceField": "/ShipTo/Address/StateProvinceCode",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "StateProvinceCode is a standard administrative region code. Maps to canonical stateOrProvince field in destination address block.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "d5805aa4cdbb",
+    "firstSeenAt": "2026-10-08T23:37:04.933Z",
+    "lastSeenAt": "2026-10-12T04:54:35.217Z",
+    "seenCount": 6,
+    "sourceSystem": "DHL",
+    "reason": "From our old invented UPS shape; real UPS requests wrap this in ShipmentRequest.Shipment.",
+    "rejectedAt": "2026-11-09T04:25:53.679Z"
+  },
+  {
+    "sourceField": "/Shipper/Address/StateProvinceCode",
+    "targetField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "StateProvinceCode is a standard administrative region code. Maps to canonical stateOrProvince field in origin address block.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request"
+    },
+    "id": "84884c4e5e41",
+    "firstSeenAt": "2026-10-08T23:37:04.933Z",
+    "lastSeenAt": "2026-10-12T04:54:35.217Z",
+    "seenCount": 6,
+    "sourceSystem": "DHL",
+    "reason": "From our old invented UPS shape; real UPS requests wrap this in ShipmentRequest.Shipment.",
+    "rejectedAt": "2026-11-09T04:25:53.685Z"
   }
 ]
