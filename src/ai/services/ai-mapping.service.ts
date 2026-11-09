@@ -134,9 +134,15 @@ export class AiMappingService {
       const v = f.exampleValue ?? getByPath(request.sourceExamplePayload, f.path);
       return typeof v === "string" && UNIT_SYSTEMS.has(v.trim().toLowerCase());
     });
+    // EasyPost's parcel weight and size have fixed units (oz, in), added after mapping
+    // by injectParcelUnitDefaults, so those units are not missing either.
+    const conventionUnits = PARCEL_UNIT_CONVENTIONS.filter((c) =>
+      sourceAnalysis.fields.some((f) => c.sourcePattern.test(f.path)),
+    ).map((c) => c.unitSuffix);
     const filledLater = (p: string) =>
       (originFromWarehouse && p.startsWith("/origin/")) ||
-      (unitsFromSystem && /\/(weight|dimensions)\/unit$/.test(p));
+      (unitsFromSystem && /\/(weight|dimensions)\/unit$/.test(p)) ||
+      (p.startsWith("/packages[]/") && conventionUnits.some((u) => p.endsWith(u)));
     const unmappedRequiredBefore = targetAnalysis.fields
       .filter((f) => isTrulyUnmappedRequired(f, mappedTargets, targetByPath))
       .map((f) => f.path)

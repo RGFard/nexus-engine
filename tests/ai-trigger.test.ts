@@ -15,8 +15,8 @@ let target: Record<string, unknown>;
 let aiCalls = 0;
 let aiResponse: Array<Record<string, unknown>> = [];
 
-function service(learned: InMemoryLearnedVocabularyStore) {
-  const config = { ...loadAiConfig(), anthropicApiKey: undefined, mappingEnabled: true, aiFallbackEnabled: true, aiFallbackThreshold: 0.75 };
+function service(learned: InMemoryLearnedVocabularyStore, aiFallbackThreshold = 0.75) {
+  const config = { ...loadAiConfig(), anthropicApiKey: undefined, mappingEnabled: true, aiFallbackEnabled: true, aiFallbackThreshold };
   const svc = new AiMappingService(config, new InMemoryVocabularyStore(), learned);
   (svc as unknown as { anthropic: unknown }).anthropic = {
     messages: {
@@ -118,5 +118,20 @@ describe("AI trigger", () => {
     );
     // A strong heuristic mapping the AI did not mention is not queued.
     assert.ok(!pending.some((e) => e.sourceField === "/from_address/city"));
+  });
+
+  it("does not ask the AI for EasyPost parcel units, which are fixed (oz, in)", async () => {
+    aiCalls = 0;
+    aiResponse = [];
+    // Threshold 0: in production the vocabulary holds EasyPost's weak guesses at full
+    // confidence; here only the unit rule is under test.
+    await plan(service(new InMemoryLearnedVocabularyStore(), 0), {
+      shipment: {
+        to_address: { name: "A", street1: "1 Main St", city: "Boston", state: "MA", zip: "02108", country: "US" },
+        from_address: { name: "B", street1: "2 Pine St", city: "Denver", state: "CO", zip: "80202", country: "US" },
+        parcel: { length: "20.2", width: "10.9", height: "5", weight: "65.9" },
+      },
+    });
+    assert.equal(aiCalls, 0);
   });
 });

@@ -892,5 +892,41 @@
     "canonicalField": "/packages[]/dimensions/unit",
     "transformation": "direct|cast:string",
     "acceptedAt": "2026-11-09T04:25:53.716Z"
+  },
+  {
+    "inputField": "/shipment/to_address/company",
+    "canonicalField": "/destination/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.774Z"
+  },
+  {
+    "inputField": "/shipment/to_address/email",
+    "canonicalField": "/destination/email",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.781Z"
+  },
+  {
+    "inputField": "/shipment/to_address/street2",
+    "canonicalField": "/destination/line2",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.787Z"
+  },
+  {
+    "inputField": "/shipment/reference",
+    "canonicalField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.793Z"
+  },
+  {
+    "inputField": "/shipment/from_address/company",
+    "canonicalField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.799Z"
+  },
+  {
+    "inputField": "/shipment/from_address/email",
+    "canonicalField": "/origin/email",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T04:45:22.805Z"
   }
 ]
