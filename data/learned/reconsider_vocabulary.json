@@ -336,5 +336,131 @@
     "sourceSystem": null,
     "reason": "Fixed kg is wrong for imperial; the unit-system step fills units.",
     "rejectedAt": "2026-11-08T22:03:43.138Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipTo/Address/AddressLine",
+    "targetField": "/destination/line1",
+    "transformation": "array:first|cast:string",
+    "confidence": 0.88,
+    "reasoning": "ShipTo Address AddressLine primary element maps to destination line1.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "4bd565c2e961",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Covered by an explicit rule that also splits the list into line1-3.",
+    "rejectedAt": "2026-11-09T00:10:19.542Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipTo/Name",
+    "targetField": "/destination/name",
+    "transformation": "direct|cast:string",
+    "confidence": 0.88,
+    "reasoning": "ShipTo/Name is the destination recipient or location name.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "f492be67eaf3",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "UPS Name is the company; AttentionName is the person (now an explicit rule).",
+    "rejectedAt": "2026-11-09T00:10:19.549Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ReferenceNumber/Value",
+    "targetField": "/identifiers/orderId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.8,
+    "reasoning": "ReferenceNumber/Value is a business reference that aligns with order identification in the canonical model.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "ebcff8c14e53",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "References go to clientReferenceId, as for FedEx and DHL; that is what the outbound plans send.",
+    "rejectedAt": "2026-11-09T00:10:19.556Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Shipper/Name",
+    "targetField": "/origin/company",
+    "transformation": "direct|cast:string",
+    "confidence": 0.75,
+    "reasoning": "Shipper/Name typically represents the company or organization name at the origin address. Maps to company rather than name because Shipper context is business-focused.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "a215479a52d8",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Shipper is the account owner; the origin comes from ShipFrom when present.",
+    "rejectedAt": "2026-11-09T00:10:19.562Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Shipper/Address/AddressLine",
+    "targetField": "/origin/line1",
+    "transformation": "array:first|cast:string",
+    "confidence": 0.88,
+    "reasoning": "Shipper/Address/AddressLine is an array; first element maps to origin line1. UPS provides AddressLine as an array; take the first element as primary street address.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "d95ed79ad511",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Shipper is the account owner; the origin comes from ShipFrom when present.",
+    "rejectedAt": "2026-11-09T00:10:19.569Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipFrom/Name",
+    "targetField": "/origin/name",
+    "transformation": "direct|cast:string",
+    "confidence": 0.8,
+    "reasoning": "ShipFrom/Name is the explicit origin/shipment origin name. Preferred over Shipper/Name because ShipFrom is the actual origin location (warehouse vs. billing entity).",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "7eada3b83250",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "UPS Name is the company; AttentionName is the person (now an explicit rule).",
+    "rejectedAt": "2026-11-09T00:10:19.577Z"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Shipper/Address/StateProvinceCode",
+    "targetField": "/origin/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.88,
+    "reasoning": "Shipper StateProvinceCode is the origin state or province code.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "4aedf69bd703",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-08T23:54:17.996Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL",
+    "reason": "Shipper is the account owner; the origin comes from ShipFrom when present.",
+    "rejectedAt": "2026-11-09T00:10:19.584Z"
   }
 ]

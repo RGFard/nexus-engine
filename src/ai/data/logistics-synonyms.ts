@@ -386,6 +386,50 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     reasoning: "Delivery date represents the estimated delivery calendar date.",
   },
   {
+    // UPS address lines: a list under Address/AddressLine (split into line1-3 later).
+    sourcePattern: /\/(ShipFrom|Shipper)\/Address\/AddressLine$/i,
+    targetPath: "/origin/line1",
+    targetPattern: /^\/origin\/line1$/,
+    confidence: 0.92,
+    reasoning: "UPS ShipFrom/Shipper AddressLine is the origin street address.",
+  },
+  {
+    sourcePattern: /\/ShipTo\/Address\/AddressLine$/i,
+    targetPath: "/destination/line1",
+    targetPattern: /^\/destination\/line1$/,
+    confidence: 0.92,
+    reasoning: "UPS ShipTo AddressLine is the destination street address.",
+  },
+  {
+    // UPS: Name is the company, AttentionName the person.
+    sourcePattern: /\/Shipment\/(ShipFrom|Shipper)\/Name$/,
+    targetPath: "/origin/company",
+    targetPattern: /^\/origin\/company$/,
+    confidence: 0.92,
+    reasoning: "UPS ShipFrom/Shipper Name is the company name.",
+  },
+  {
+    sourcePattern: /\/Shipment\/(ShipFrom|Shipper)\/AttentionName$/,
+    targetPath: "/origin/name",
+    targetPattern: /^\/origin\/name$/,
+    confidence: 0.92,
+    reasoning: "UPS AttentionName is the contact person.",
+  },
+  {
+    sourcePattern: /\/Shipment\/ShipTo\/Name$/,
+    targetPath: "/destination/company",
+    targetPattern: /^\/destination\/company$/,
+    confidence: 0.92,
+    reasoning: "UPS ShipTo Name is the company name.",
+  },
+  {
+    sourcePattern: /\/Shipment\/ShipTo\/AttentionName$/,
+    targetPath: "/destination/name",
+    targetPattern: /^\/destination\/name$/,
+    confidence: 0.92,
+    reasoning: "UPS AttentionName is the contact person.",
+  },
+  {
     // UPS keeps the phone as Phone: { Number } under ShipFrom / Shipper / ShipTo.
     sourcePattern: /\/(ship_?from|shipper|sender|origin)\/phone\/number$/i,
     targetPath: "/origin/phone",

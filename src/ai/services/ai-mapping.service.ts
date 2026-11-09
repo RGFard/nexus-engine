@@ -113,6 +113,10 @@ export class AiMappingService {
       }
     }
 
+    // Before deciding on AI: when ShipFrom is present the origin comes from it, so its
+    // fields count as mapped and don't look like unplaced data that needs the AI.
+    mappings = preferShipFromForOrigin(mappings, sourceAnalysis);
+
     const heuristicAvg = averageConfidence(mappings);
 
     const mappedTargets = new Set(mappings.map((m) => m.targetField));
@@ -157,7 +161,13 @@ export class AiMappingService {
     // nothing recognized it, while the fields that DID map happen to be genuinely
     // high-confidence. See isPlausibleUnmappedField below.
     const unmappedPlausibleFields = sourceAnalysis.fields
-      .filter((f) => !mappedSourcesBefore.has(f.path) && !noHome.has(f.path) && isPlausibleUnmappedField(f))
+      .filter(
+        (f) =>
+          !mappedSourcesBefore.has(f.path) &&
+          !noHome.has(f.path) &&
+          !isShadowedShipperField(f.path, sourceAnalysis) &&
+          isPlausibleUnmappedField(f),
+      )
       .map((f) => f.path);
 
     const noMappingsFound = mappings.length === 0;
@@ -377,6 +387,14 @@ export class AiMappingService {
     // /shipments[]/shipmentId -> /identifiers/shipmentId landing as a bare number (string
     // target, "direct" with no cast) and as EasyPost's /parcel/height|length|width landing
     // as bare strings on /packages[]/dimensions/* (number target, same gap, opposite type).
+    // UPS sends both Shipper (the account owner) and ShipFrom (where the parcel leaves).
+    // The origin must come from ShipFrom when it is there, never a mix of the two.
+    mappings = preferShipFromForOrigin(mappings, sourceAnalysis);
+
+    // An address sent as a list of lines (UPS AddressLine, FedEx streetLines) fills
+    // line1, line2 and line3 one item each, instead of one joined string in line1.
+    mappings = splitAddressLineLists(mappings, request.sourceExamplePayload);
+
     mappings = enforceScalarCastTransformation(mappings, targetByPath);
 
     // Partition by autoApplyThreshold: candidates strictly below go to review, not auto-apply
@@ -868,6 +886,113 @@ const ORIGIN_REF_PATTERNS: Array<{
 ];
 
 const UNIT_SYSTEMS = new Set(["metric", "imperial"]);
+
+const SHIPPER_SEGMENT = /^shipper$/i;
+const SHIP_FROM_SEGMENT = /^ship_?from$/i;
+const ORIGIN_ADDRESS_TARGET = /^\/origin\/(line[123]|city|stateOrProvince|postalCode|countryCode|residential)$/;
+
+/** A field under Shipper when a ShipFrom block sits next to it: ShipFrom supplies the origin. */
+function isShadowedShipperField(
+  path: string,
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): boolean {
+  const segments = path.split("/");
+  const i = segments.findIndex((seg) => SHIPPER_SEGMENT.test(seg.replace(/\[\]$/, "")));
+  if (i < 0) return false;
+  const parent = segments.slice(0, i).join("/");
+  return sourceAnalysis.fields.some((f) => {
+    if (!f.path.startsWith(`${parent}/`)) return false;
+    return SHIP_FROM_SEGMENT.test(f.path.slice(parent.length + 1).split("/")[0]!);
+  });
+}
+
+function preferShipFromForOrigin(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): FieldMapping[] {
+  const sourcePaths = new Set(sourceAnalysis.fields.map((f) => f.path));
+  const swapped: string[] = [];
+  const dropped: string[] = [];
+
+  const result: FieldMapping[] = [];
+  for (const m of mappings) {
+    if (!m.targetField.startsWith("/origin/")) {
+      result.push(m);
+      continue;
+    }
+    const segments = m.sourceField.split("/");
+    const i = segments.findIndex((seg) => SHIPPER_SEGMENT.test(seg.replace(/\[\]$/, "")));
+    if (i < 0) {
+      result.push(m);
+      continue;
+    }
+    // Is there a ShipFrom block next to this Shipper block?
+    const parent = segments.slice(0, i).join("/");
+    const shipFromName = [...sourcePaths]
+      .filter((p) => p.startsWith(`${parent}/`))
+      .map((p) => p.slice(parent.length + 1).split("/")[0]!)
+      .find((seg) => SHIP_FROM_SEGMENT.test(seg));
+    if (!shipFromName) {
+      result.push(m); // no ShipFrom: the shipper's address is the origin
+      continue;
+    }
+    const twin = [...segments.slice(0, i), shipFromName, ...segments.slice(i + 1)].join("/");
+    if (sourcePaths.has(twin)) {
+      result.push({ ...m, sourceField: twin, reasoning: `${m.reasoning} (taken from ${shipFromName}, which overrides Shipper for the origin)` });
+      swapped.push(`${m.sourceField} -> ${twin}`);
+    } else if (ORIGIN_ADDRESS_TARGET.test(m.targetField)) {
+      dropped.push(m.sourceField); // never mix the account owner's address into the ship-from
+    } else {
+      result.push(m); // contact fallback (phone, email) when ShipFrom has none
+    }
+  }
+
+  // The swap can leave two mappings for one target; keep the first.
+  const seen = new Set<string>();
+  const deduped = result.filter((m) => {
+    if (!m.targetField.startsWith("/origin/")) return true;
+    if (seen.has(m.targetField)) return false;
+    seen.add(m.targetField);
+    return true;
+  });
+
+  if (swapped.length > 0 || dropped.length > 0) {
+    log.info({ swapped, dropped }, "Origin taken from ShipFrom instead of Shipper");
+  }
+  return deduped;
+}
+
+function exampleAt(payload: unknown, path: string): unknown {
+  // First item of every list on the way, e.g. /requestedShipment/recipients[]/address/streetLines.
+  return getByPath(payload, path.replace(/\[\]\//g, "/0/").replace(/\[\]$/, ""));
+}
+
+function splitAddressLineLists(mappings: FieldMapping[], payload: unknown): FieldMapping[] {
+  const out = [...mappings];
+  const mappedTargets = new Set(mappings.map((m) => m.targetField));
+  for (let k = 0; k < mappings.length; k++) {
+    const m = mappings[k]!;
+    const side = m.targetField.match(/^\/(origin|destination)\/line1$/)?.[1];
+    if (!side) continue;
+    const example = exampleAt(payload, m.sourceField);
+    if (!Array.isArray(example) || !example.every((v) => typeof v === "string")) continue;
+
+    out[k] = { ...m, transformation: "array:at:0|cast:string" };
+    for (const n of [2, 3]) {
+      const target = `/${side}/line${n}`;
+      if (mappedTargets.has(target)) continue;
+      out.push({
+        sourceField: m.sourceField,
+        targetField: target,
+        confidence: m.confidence,
+        transformation: `array:at:${n - 1}|cast:string`,
+        reasoning: `Address line ${n} is item ${n} of the same address-line list.`,
+      });
+      mappedTargets.add(target);
+    }
+  }
+  return out;
+}
 
 function synthesizeUnitSystemExtensions(
   mappings: FieldMapping[],

@@ -58,5 +58,101 @@
     "lastSeenAt": "2026-10-18T03:15:31.320Z",
     "seenCount": 1,
     "sourceSystem": "SAP/ERP"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/PaymentInformation/ShipmentCharge/BillShipper/AccountNumber",
+    "targetField": "/carrier/accountNumber",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "BillShipper AccountNumber is the shipper's account number with the carrier.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "177243e4d4eb",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Service/Code",
+    "targetField": "/carrier/serviceCode",
+    "transformation": "direct|cast:string",
+    "confidence": 0.92,
+    "reasoning": "Service Code is the carrier-specific service product code (e.g. '03' for Ground).",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "2866d0d5f540",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipTo/Address/StateProvinceCode",
+    "targetField": "/destination/stateOrProvince",
+    "transformation": "direct|cast:string",
+    "confidence": 0.88,
+    "reasoning": "StateProvinceCode is the state, province, or region code at destination.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "956aae2942a4",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Request/TransactionReference/CustomerContext",
+    "targetField": "/identifiers/clientReferenceId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.88,
+    "reasoning": "Customer context serves as client-provided reference for reconciliation and correlation.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "e19a84b4521b",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Package/Dimensions/UnitOfMeasurement/Code",
+    "targetField": "/packages[]/dimensions/unit",
+    "transformation": "direct|cast:string",
+    "confidence": 0.9,
+    "reasoning": "Dimension unit code (IN, CM) maps to canonical dimension unit.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "436872a76e3f",
+    "firstSeenAt": "2026-11-08T23:54:17.996Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 2,
+    "sourceSystem": "DHL"
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ReferenceNumber/Value",
+    "targetField": "/identifiers/orderId",
+    "transformation": "direct|cast:string",
+    "confidence": 0.85,
+    "reasoning": "UPS ReferenceNumber/Value is a client-supplied order or shipment reference identifier.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "ebcff8c14e53",
+    "firstSeenAt": "2026-11-09T00:12:11.258Z",
+    "lastSeenAt": "2026-11-09T00:12:11.258Z",
+    "seenCount": 1,
+    "sourceSystem": "DHL"
   }
 ]

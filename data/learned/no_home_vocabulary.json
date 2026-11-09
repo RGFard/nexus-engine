@@ -68,5 +68,33 @@
     "firstSeenAt": "2026-10-29T05:19:44.688Z",
     "lastSeenAt": "2026-10-29T05:31:57.536Z",
     "seenCount": 2
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/Shipper/AttentionName",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-11-08T23:54:18.003Z",
+    "lastSeenAt": "2026-11-08T23:54:18.003Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipFrom/AttentionName",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-11-08T23:54:18.003Z",
+    "lastSeenAt": "2026-11-08T23:54:18.003Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipFrom/Address/StateProvinceCode",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-11-08T23:54:18.003Z",
+    "lastSeenAt": "2026-11-08T23:54:18.003Z",
+    "seenCount": 1
+  },
+  {
+    "sourceField": "/ShipmentRequest/Shipment/ShipTo/AttentionName",
+    "targetKey": "096c992cc156ec19",
+    "firstSeenAt": "2026-11-08T23:54:18.003Z",
+    "lastSeenAt": "2026-11-08T23:54:18.003Z",
+    "seenCount": 1
   }
 ]

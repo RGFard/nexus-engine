@@ -309,6 +309,15 @@ function applyStep(value: unknown, step: string, context: TransformContext): unk
     return new Date().toISOString().slice(0, 10);
   }
 
+  if (step.startsWith("array:at:")) {
+    // Item N of a list (0 = first). Missing or blank items are undefined, so the
+    // mapping is skipped instead of writing an empty line.
+    const n = Number(step.slice("array:at:".length));
+    if (!Array.isArray(value)) return n === 0 ? value : undefined;
+    const item = value[n];
+    return typeof item === "string" && item.trim() === "" ? undefined : item;
+  }
+
   if (step === "array:positions") {
     // 1, 2, 3 ... one per item: DHL numbers its customs line items.
     return Array.isArray(value) ? value.map((_, i) => i + 1) : value;

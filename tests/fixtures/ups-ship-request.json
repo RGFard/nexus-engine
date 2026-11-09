@@ -1,0 +1,105 @@
+{
+  "ShipmentRequest": {
+    "Request": {
+      "RequestOption": "nonvalidate",
+      "TransactionReference": {
+        "CustomerContext": "ORDER-1001"
+      }
+    },
+    "Shipment": {
+      "Description": "Pet supplies",
+      "Shipper": {
+        "Name": "T and T Designs",
+        "AttentionName": "Tom Taylor",
+        "Phone": {
+          "Number": "4105550100"
+        },
+        "ShipperNumber": "A1B2C3",
+        "Address": {
+          "AddressLine": [
+            "2311 York Rd"
+          ],
+          "City": "Timonium",
+          "StateProvinceCode": "MD",
+          "PostalCode": "21093",
+          "CountryCode": "US"
+        }
+      },
+      "ShipFrom": {
+        "Name": "T and T Designs Warehouse",
+        "AttentionName": "Dock Manager",
+        "Phone": {
+          "Number": "6785550100"
+        },
+        "Address": {
+          "AddressLine": [
+            "1000 Industrial Pkwy"
+          ],
+          "City": "Alpharetta",
+          "StateProvinceCode": "GA",
+          "PostalCode": "30005",
+          "CountryCode": "US"
+        }
+      },
+      "ShipTo": {
+        "Name": "Happy Dog Pet Supply",
+        "AttentionName": "Jane Miller",
+        "Phone": {
+          "Number": "4105550199"
+        },
+        "Address": {
+          "AddressLine": [
+            "123 Main St",
+            "Suite 4"
+          ],
+          "City": "Baltimore",
+          "StateProvinceCode": "MD",
+          "PostalCode": "21201",
+          "CountryCode": "US"
+        }
+      },
+      "PaymentInformation": {
+        "ShipmentCharge": {
+          "Type": "01",
+          "BillShipper": {
+            "AccountNumber": "A1B2C3"
+          }
+        }
+      },
+      "Service": {
+        "Code": "03",
+        "Description": "Ground"
+      },
+      "ReferenceNumber": {
+        "Value": "ORDER-1001"
+      },
+      "Package": {
+        "Description": "Dog food",
+        "Packaging": {
+          "Code": "02",
+          "Description": "Customer Supplied Package"
+        },
+        "Dimensions": {
+          "UnitOfMeasurement": {
+            "Code": "IN"
+          },
+          "Length": "10",
+          "Width": "30",
+          "Height": "45"
+        },
+        "PackageWeight": {
+          "UnitOfMeasurement": {
+            "Code": "LBS"
+          },
+          "Weight": "5"
+        }
+      }
+    },
+    "LabelSpecification": {
+      "LabelImageFormat": {
+        "Code": "GIF"
+      },
+      "HTTPUserAgent": "Mozilla/4.5"
+    }
+  }
+}
