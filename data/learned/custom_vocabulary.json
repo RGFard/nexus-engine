@@ -928,5 +928,107 @@
     "canonicalField": "/origin/email",
     "transformation": "direct|cast:string",
     "acceptedAt": "2026-11-09T04:45:22.805Z"
+  },
+  {
+    "inputField": "/d/IncotermsClassification",
+    "canonicalField": "/customs/incoterm",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.390Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/CityName",
+    "canonicalField": "/destination/city",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.397Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/Country",
+    "canonicalField": "/destination/countryCode",
+    "transformation": "array:first|normalize:countryCode|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.404Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/EmailAddress",
+    "canonicalField": "/destination/email",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.410Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/StreetName",
+    "canonicalField": "/destination/line1",
+    "transformation": "concat:/d/to_DeliveryDocumentPartner/results[]/to_Address/StreetName,/d/to_DeliveryDocumentPartner/results[]/to_Address/HouseNumber|array:first|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.416Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/PhoneNumber",
+    "canonicalField": "/destination/phone",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.434Z"
+  },
+  {
+    "inputField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/Region",
+    "canonicalField": "/destination/stateOrProvince",
+    "transformation": "array:first|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.440Z"
+  },
+  {
+    "inputField": "/d/DeliveryDocument",
+    "canonicalField": "/identifiers/externalId",
+    "transformation": "direct|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.446Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/HandlingUnitHeight",
+    "canonicalField": "/packages[]/dimensions/height",
+    "transformation": "array:map|cast:number",
+    "acceptedAt": "2026-11-09T20:05:52.452Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/HandlingUnitLength",
+    "canonicalField": "/packages[]/dimensions/length",
+    "transformation": "array:map|cast:number",
+    "acceptedAt": "2026-11-09T20:05:52.458Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/HandlingUnitUoMDimension",
+    "canonicalField": "/packages[]/dimensions/unit",
+    "transformation": "array:map|normalize:lowercase|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.464Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/HandlingUnitWidth",
+    "canonicalField": "/packages[]/dimensions/width",
+    "transformation": "array:map|cast:number",
+    "acceptedAt": "2026-11-09T20:05:52.470Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/HandlingUnitExternalId",
+    "canonicalField": "/packages[]/packageId",
+    "transformation": "array:map|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.497Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/WeightUnit",
+    "canonicalField": "/packages[]/weight/unit",
+    "transformation": "array:map|normalize:lowercase|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.516Z"
+  },
+  {
+    "inputField": "/d/to_HandlingUnitHeaderDelivery/results[]/GrossWeight",
+    "canonicalField": "/packages[]/weight/value",
+    "transformation": "array:map|cast:number",
+    "acceptedAt": "2026-11-09T20:05:52.522Z"
+  },
+  {
+    "inputField": "/d/HeaderWeightUnit",
+    "canonicalField": "/weight/unit",
+    "transformation": "direct|normalize:lowercase|cast:string",
+    "acceptedAt": "2026-11-09T20:05:52.528Z"
+  },
+  {
+    "inputField": "/d/HeaderGrossWeight",
+    "canonicalField": "/weight/value",
+    "transformation": "cast:number",
+    "acceptedAt": "2026-11-09T20:05:52.534Z"
   }
 ]

@@ -397,6 +397,17 @@ export class AiMappingService {
     // The origin must come from ShipFrom when it is there, never a mix of the two.
     mappings = preferShipFromForOrigin(mappings, sourceAnalysis);
 
+    // A list of parties told apart by a code (SAP PartnerFunction SH = ship-to): the
+    // destination is read from the ship-to party, not from whichever comes first.
+    mappings = selectQualifiedParties(mappings, request.sourceExamplePayload);
+
+    // SAP partner names: Name1 is the company, Name2 the contact or department, whatever
+    // the heuristic or AI proposed (Name2 is not an address line).
+    mappings = enforceSapPartnerNames(mappings);
+
+    // SAP sends the street name and house number apart: line1 = "456 Customer Ave".
+    mappings = joinStreetAndHouseNumber(mappings, sourceAnalysis);
+
     // An address sent as a list of lines (UPS AddressLine, FedEx streetLines) fills
     // line1, line2 and line3 one item each, instead of one joined string in line1.
     mappings = splitAddressLineLists(mappings, request.sourceExamplePayload);
@@ -881,6 +892,15 @@ const ORIGIN_REF_PATTERNS: Array<{
       "stored as extensions.originRef for downstream resolution into a full address.",
   },
   {
+    // SAP S/4HANA outbound delivery: the ship-from is only a shipping point code; its
+    // address lives in SAP configuration, so it is resolved from the location table.
+    pattern: /^\/d\/ShippingPoint$/,
+    extensionKey: "originRef",
+    reasoning:
+      "SAP ShippingPoint is the origin shipping point code; " +
+      "stored as extensions.originRef for downstream resolution into a full address.",
+  },
+  {
     // ShipStation API v2 (ShipEngine-based): shipments carry warehouse_id or a ship_from
     // address. Matches /warehouse_id and /shipments[]/warehouse_id.
     pattern: /^(?:\/shipments\[\])?\/warehouse_id$/i,
@@ -966,6 +986,87 @@ function preferShipFromForOrigin(
     log.info({ swapped, dropped }, "Origin taken from ShipFrom instead of Shipper");
   }
   return deduped;
+}
+
+// Party qualifier fields and the codes that mean ship-to (SAP S/4 English code SH,
+// SAP IDoc / German code WE).
+const PARTY_QUALIFIERS: Array<{ field: string; destination: string[] }> = [
+  { field: "PartnerFunction", destination: ["SH", "WE"] },
+  { field: "PARTNER_Q", destination: ["WE", "SH"] },
+];
+
+function selectQualifiedParties(mappings: FieldMapping[], payload: unknown): FieldMapping[] {
+  const rewritten: string[] = [];
+  const out = mappings.map((m) => {
+    if (!m.targetField.startsWith("/destination/")) return m;
+    const match = m.sourceField.match(/^(.*?)\/([^/]+)\[\]\/(.*)$/);
+    if (!match) return m;
+    const [, before, listKey, after] = match;
+    const list = getByPath(payload, `${before}/${listKey}`.replace(/\[\]\//g, "/0/"));
+    if (!Array.isArray(list) || list.length === 0) return m;
+    for (const q of PARTY_QUALIFIERS) {
+      const codes = list.map((it) => (it && typeof it === "object" ? (it as Record<string, unknown>)[q.field] : undefined));
+      const code = q.destination.find((c) => codes.includes(c));
+      if (!code) continue;
+      const selected = `${before}/${listKey}[${q.field}=${code}]/${after}`;
+      rewritten.push(`${m.sourceField} -> ${selected}`);
+      const transformation =
+        m.transformation
+          .split("|")
+          .filter((step) => step !== "array:first" && step !== "array:map")
+          .join("|") || "direct";
+      return { ...m, sourceField: selected, transformation };
+    }
+    return m;
+  });
+  if (rewritten.length > 0) log.info({ rewritten }, "Destination read from the ship-to party");
+  return out;
+}
+
+const SAP_PARTNER_NAMES: Array<[RegExp, string]> = [
+  [/\/to_Address\/BusinessPartnerName1$/, "company"],
+  [/\/to_Address\/BusinessPartnerName2$/, "name"],
+];
+
+function enforceSapPartnerNames(mappings: FieldMapping[]): FieldMapping[] {
+  const out: FieldMapping[] = [];
+  for (const m of mappings) {
+    const rule = SAP_PARTNER_NAMES.find(([re]) => re.test(m.sourceField));
+    const side = m.targetField.match(/^\/(origin|destination)\//)?.[1];
+    if (!rule || !side) {
+      out.push(m);
+      continue;
+    }
+    out.push({ ...m, targetField: `/${side}/${rule[1]}`, transformation: "direct|cast:string" });
+  }
+  // A retarget can collide with another mapping for the same field: keep the SAP one.
+  const byTarget = new Map<string, FieldMapping>();
+  for (const m of out) {
+    const existing = byTarget.get(m.targetField);
+    const isSap = SAP_PARTNER_NAMES.some(([re]) => re.test(m.sourceField));
+    if (!existing || isSap) byTarget.set(m.targetField, m);
+  }
+  const kept = new Set(byTarget.values());
+  return out.filter((m) => kept.has(m) || !m.targetField.match(/^\/(origin|destination)\/(company|name)$/));
+}
+
+function joinStreetAndHouseNumber(
+  mappings: FieldMapping[],
+  sourceAnalysis: ReturnType<typeof semanticMatcherService.analyzeSchema>,
+): FieldMapping[] {
+  const generic = (p: string) => p.replace(/\[[^\]]*\]/g, "[]");
+  const sourceGeneric = new Set(sourceAnalysis.fields.map((f) => generic(f.path)));
+  return mappings.map((m) => {
+    if (!/^\/(origin|destination)\/line1$/.test(m.targetField)) return m;
+    if (!/\/StreetName$/.test(m.sourceField)) return m;
+    const house = m.sourceField.replace(/\/StreetName$/, "/HouseNumber");
+    if (!sourceGeneric.has(generic(house))) return m;
+    return {
+      ...m,
+      transformation: `concat:${house}," ",${m.sourceField}|cast:string`,
+      reasoning: "Street address is the house number followed by the street name.",
+    };
+  });
 }
 
 function exampleAt(payload: unknown, path: string): unknown {

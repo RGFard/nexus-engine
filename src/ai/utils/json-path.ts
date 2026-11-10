@@ -4,6 +4,8 @@ export interface PathSegment {
   isArray: boolean;
   /** Set when segment is `key[N]` (explicit index access) */
   index?: number;
+  /** Set when segment is `key[field=value]`: the first list item whose field equals value */
+  where?: { field: string; value: string };
 }
 
 /** Parse JSON Pointer-style paths with `[]` array wildcards */
@@ -14,6 +16,10 @@ export function parsePath(pointer: string): PathSegment[] {
   return parts.map((part) => {
     if (part.endsWith("[]")) {
       return { key: part.slice(0, -2), isArray: true };
+    }
+    const whereMatch = part.match(/^(.+)\[([^=\]]+)=([^\]]*)\]$/);
+    if (whereMatch) {
+      return { key: whereMatch[1]!, isArray: false, where: { field: whereMatch[2]!, value: whereMatch[3]! } };
     }
     const indexMatch = part.match(/^(.+)\[(\d+)\]$/);
     if (indexMatch) {
@@ -142,6 +148,15 @@ function getAtSegments(current: unknown, segments: PathSegment[], index: number)
 
   const record = current as Record<string, unknown>;
   const next = record[segment.key];
+
+  if (segment.where) {
+    // e.g. results[PartnerFunction=SH]: pick the ship-to out of a list of parties.
+    if (!Array.isArray(next)) return undefined;
+    const { field, value } = segment.where;
+    const item = next.find((it) => isPlainObject(it) && String(it[field]) === value);
+    if (item === undefined) return undefined;
+    return isLast ? item : getAtSegments(item, segments, index + 1);
+  }
 
   if (segment.index !== undefined) {
     if (!Array.isArray(next)) {

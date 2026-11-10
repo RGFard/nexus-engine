@@ -398,12 +398,16 @@ function applyConcat(value: unknown, step: string, context: TransformContext): u
       return v === null || v === undefined ? "" : String(v);
     }
 
+    // "..." is a literal, e.g. the space in concat:/a/HouseNumber," ",/a/StreetName
+    const literal = field.match(/^"(.*)"$/);
+    if (literal) return literal[1]!;
+
     const pointer = field.startsWith("/") ? field : `/${field}`;
     const v = getByPath(context.sourcePayload, pointer);
     return v === null || v === undefined ? "" : String(v);
   });
 
-  return parts.join("");
+  return parts.join("").trim();
 }
 
 function parseConstant(raw: string): unknown {

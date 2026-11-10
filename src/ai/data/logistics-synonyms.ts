@@ -386,6 +386,21 @@ export const EXPLICIT_PATH_MAPPINGS: Array<{
     reasoning: "Delivery date represents the estimated delivery calendar date.",
   },
   {
+    // SAP S/4 delivery partner address: Name1 is the company, Name2 the contact or department.
+    sourcePattern: /\/to_Address\/BusinessPartnerName1$/,
+    targetPath: "/destination/company",
+    targetPattern: /^\/destination\/company$/,
+    confidence: 0.92,
+    reasoning: "SAP BusinessPartnerName1 is the partner's company name.",
+  },
+  {
+    sourcePattern: /\/to_Address\/BusinessPartnerName2$/,
+    targetPath: "/destination/name",
+    targetPattern: /^\/destination\/name$/,
+    confidence: 0.92,
+    reasoning: "SAP BusinessPartnerName2 is the contact or department at the partner.",
+  },
+  {
     // UPS address lines: a list under Address/AddressLine (split into line1-3 later).
     sourcePattern: /\/(ShipFrom|Shipper)\/Address\/AddressLine$/i,
     targetPath: "/origin/line1",

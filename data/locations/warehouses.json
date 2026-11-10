@@ -1,5 +1,5 @@
 {
-  "_comment": "Warehouse ID -> ship-from address, in canonical address fields (line1, line2, city, stateOrProvince, postalCode, countryCode, name, company, phone). The two entries below are sample data for the ShipStation test fixtures, not real warehouses.",
+  "_comment": "Warehouse ID -> ship-from address, in canonical address fields (line1, line2, city, stateOrProvince, postalCode, countryCode, name, company, phone). The entries below are sample data for the ShipStation and SAP test fixtures, not real warehouses.",
   "98765": {
     "company": "Sample Fulfillment West",
     "line1": "1200 Distribution Way",
@@ -26,5 +26,14 @@
     "postalCode": "43217",
     "countryCode": "US",
     "phone": "+1 614 555 0188"
+  },
+  "1710": {
+    "company": "Sample Shipping Point 1710",
+    "line1": "3999 West Chester Pike",
+    "city": "Newtown Square",
+    "stateOrProvince": "PA",
+    "postalCode": "19073",
+    "countryCode": "US",
+    "phone": "+1 610 555 0171"
   }
 }

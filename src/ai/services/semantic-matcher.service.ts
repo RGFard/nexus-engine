@@ -431,6 +431,31 @@ export class SemanticMatcherService {
   }
 }
 
+/**
+ * One example object holding every field seen in any list item, so a field that only
+ * the second item has (SAP: the ship-to partner's email, when the sold-to comes first)
+ * is still discovered. Lists of plain values keep their first value.
+ */
+function mergeListItems(list: unknown[]): unknown {
+  const objects = list.filter((it) => it !== null && typeof it === "object" && !Array.isArray(it)) as Record<string, unknown>[];
+  if (objects.length === 0) return list[0];
+  const merged: Record<string, unknown> = {};
+  for (const obj of objects) {
+    for (const [k, v] of Object.entries(obj)) {
+      const existing = merged[k];
+      if (existing === undefined || existing === null) {
+        merged[k] = v;
+      } else if (
+        v !== null && typeof v === "object" && !Array.isArray(v) &&
+        typeof existing === "object" && !Array.isArray(existing)
+      ) {
+        merged[k] = mergeListItems([existing, v]);
+      }
+    }
+  }
+  return merged;
+}
+
 function inferProperties(
   value: unknown,
   depth = 0,
@@ -440,11 +465,10 @@ function inferProperties(
   }
 
   if (Array.isArray(value)) {
-    const first = value[0];
     return {
       items: {
         type: "object",
-        properties: inferProperties(first, depth + 1),
+        properties: inferProperties(mergeListItems(value), depth + 1),
       },
     } as unknown as Record<string, Record<string, unknown>>;
   }
@@ -454,7 +478,7 @@ function inferProperties(
     if (child === null) {
       props[key] = { type: "null" };
     } else if (Array.isArray(child)) {
-      props[key] = { type: "array", items: { type: "object", properties: inferProperties(child[0], depth + 1) } };
+      props[key] = { type: "array", items: { type: "object", properties: inferProperties(mergeListItems(child), depth + 1) } };
     } else if (typeof child === "object") {
       props[key] = { type: "object", properties: inferProperties(child, depth + 1) };
     } else {

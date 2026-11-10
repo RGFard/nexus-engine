@@ -1,0 +1,91 @@
+{
+  "d": {
+    "DeliveryDocument": "80001234",
+    "DeliveryDocumentType": "LF",
+    "ShippingPoint": "1710",
+    "SoldToParty": "17100002",
+    "ShipToParty": "17100001",
+    "DeliveryDate": "/Date(1763164800000)/",
+    "PlannedGoodsIssueDate": "/Date(1763078400000)/",
+    "HeaderGrossWeight": "12.500",
+    "HeaderNetWeight": "11.800",
+    "HeaderWeightUnit": "KG",
+    "TotalNumberOfPackage": "2",
+    "IncotermsClassification": "DAP",
+    "IncotermsTransferLocation": "New York",
+    "ShippingCondition": "01",
+    "to_DeliveryDocumentPartner": {
+      "results": [
+        {
+          "SDDocument": "80001234",
+          "PartnerFunction": "SP",
+          "Customer": "17100002",
+          "to_Address": {
+            "BusinessPartnerName1": "Billing HQ Inc",
+            "StreetName": "Head Office Rd",
+            "HouseNumber": "1",
+            "CityName": "Boston",
+            "PostalCode": "02108",
+            "Region": "MA",
+            "Country": "US",
+            "PhoneNumber": "6175550100"
+          }
+        },
+        {
+          "SDDocument": "80001234",
+          "PartnerFunction": "SH",
+          "Customer": "17100001",
+          "to_Address": {
+            "BusinessPartnerName1": "Recipient Corp",
+            "BusinessPartnerName2": "Receiving Dept",
+            "StreetName": "Customer Ave",
+            "HouseNumber": "456",
+            "CityName": "New York",
+            "PostalCode": "10001",
+            "Region": "NY",
+            "Country": "US",
+            "PhoneNumber": "2125550199",
+            "EmailAddress": "receiving@recipient.example"
+          }
+        }
+      ]
+    },
+    "to_DeliveryDocumentItem": {
+      "results": [
+        {
+          "DeliveryDocumentItem": "10",
+          "Material": "WIDGET-001",
+          "ActualDeliveryQuantity": "3",
+          "DeliveryQuantityUnit": "PC",
+          "ItemGrossWeight": "5.800",
+          "ItemNetWeight": "5.500",
+          "ItemWeightUnit": "KG"
+        }
+      ]
+    },
+    "to_HandlingUnitHeaderDelivery": {
+      "results": [
+        {
+          "HandlingUnitExternalId": "00340012340000000011",
+          "PackagingMaterial": "CARTON",
+          "GrossWeight": "6.500",
+          "WeightUnit": "KG",
+          "HandlingUnitLength": "40",
+          "HandlingUnitWidth": "30",
+          "HandlingUnitHeight": "25",
+          "HandlingUnitUoMDimension": "CM"
+        },
+        {
+          "HandlingUnitExternalId": "00340012340000000028",
+          "PackagingMaterial": "CARTON",
+          "GrossWeight": "6.000",
+          "WeightUnit": "KG",
+          "HandlingUnitLength": "40",
+          "HandlingUnitWidth": "30",
+          "HandlingUnitHeight": "20",
+          "HandlingUnitUoMDimension": "CM"
+        }
+      ]
+    }
+  }
+}

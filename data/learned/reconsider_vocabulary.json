@@ -512,5 +512,77 @@
     "sourceSystem": "DHL",
     "reason": "From our old invented UPS shape; real UPS requests wrap this in ShipmentRequest.Shipment.",
     "rejectedAt": "2026-11-09T04:25:53.685Z"
+  },
+  {
+    "sourceField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/BusinessPartnerName2",
+    "targetField": "/destination/line2",
+    "transformation": "array:first|cast:string",
+    "confidence": 0.65,
+    "reasoning": "Secondary name (e.g. department or division) can serve as additional address detail. Take first result.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "56d9dc6a67cc",
+    "firstSeenAt": "2026-11-09T20:02:05.358Z",
+    "lastSeenAt": "2026-11-09T20:02:05.358Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "SAP BusinessPartnerName2 is a contact or department, not an address line (now enforced by a rule).",
+    "rejectedAt": "2026-11-09T20:05:52.422Z"
+  },
+  {
+    "sourceField": "/d/to_DeliveryDocumentPartner/results[]/to_Address/BusinessPartnerName1",
+    "targetField": "/destination/name",
+    "transformation": "array:first|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Primary business partner name for recipient. Maps to destination contact name. Take first result from array.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "342f195f8647",
+    "firstSeenAt": "2026-11-09T20:02:05.358Z",
+    "lastSeenAt": "2026-11-09T20:02:05.358Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "SAP BusinessPartnerName1 is the company (now enforced by a rule).",
+    "rejectedAt": "2026-11-09T20:05:52.428Z"
+  },
+  {
+    "sourceField": "/d/to_DeliveryDocumentItem/results[]/ActualDeliveryQuantity",
+    "targetField": "/packages[]/quantity",
+    "transformation": "array:map|cast:number",
+    "confidence": 0.8,
+    "reasoning": "Quantity of units delivered in line item. Maps to package quantity. Source is string, target is integer.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "7f0744a8487d",
+    "firstSeenAt": "2026-11-09T20:02:05.358Z",
+    "lastSeenAt": "2026-11-09T20:02:05.358Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "Delivery items are not packages: item 1 is not handling unit 1. Items belong to customs line items.",
+    "rejectedAt": "2026-11-09T20:05:52.504Z"
+  },
+  {
+    "sourceField": "/d/to_DeliveryDocumentItem/results[]/Material",
+    "targetField": "/packages[]/sku",
+    "transformation": "array:map|cast:string",
+    "confidence": 0.8,
+    "reasoning": "Material code is product SKU. Map to packages array, one item per source item.",
+    "context": {
+      "targetSchemaId": "canonical://shipment/shipment-create-request",
+      "clientId": "dev-user"
+    },
+    "id": "974dfc942f84",
+    "firstSeenAt": "2026-11-09T20:02:05.358Z",
+    "lastSeenAt": "2026-11-09T20:02:05.358Z",
+    "seenCount": 1,
+    "sourceSystem": null,
+    "reason": "Delivery items are not packages: item 1 is not handling unit 1. Items belong to customs line items.",
+    "rejectedAt": "2026-11-09T20:05:52.510Z"
   }
 ]

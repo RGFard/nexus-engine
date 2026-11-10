@@ -71,6 +71,13 @@ export function parseCarrierDate(value: unknown): Date | undefined {
     return utcDate(Number(isoDateOnly[1]), Number(isoDateOnly[2]), Number(isoDateOnly[3]));
   }
 
+  // SAP OData v2: /Date(1763164800000)/ or /Date(1763164800000+0000)/ (ms since 1970, UTC)
+  const sapDate = raw.match(/^\/Date\((-?\d+)(?:[+-]\d{4})?\)\/$/);
+  if (sapDate) {
+    const d = new Date(Number(sapDate[1]));
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+
   // DHL MyDHL: 2026-10-29T10:00:00 GMT-07:00 (space optional), which Date cannot read.
   const gmt = raw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\s*GMT([+-])(\d{2}):?(\d{2})$/i);
   if (gmt) {
